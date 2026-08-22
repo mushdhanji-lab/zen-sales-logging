@@ -1,442 +1,451 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>ZEN Daily Sale Entry</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 20px 16px 60px;
-      background: #f7f7f8;
-      color: #1a1a1a;
+<meta charset="utf-8">
+<title>ZEN Daily Sale Entry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+          surface: '#f3f4f6',
+        },
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+      }
     }
-    h1 { font-size: 20px; margin: 0 0 4px; }
-    h2 { font-size: 15px; margin: 28px 0 10px; }
-    .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
-    label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
-    select, input[type=number] {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background: #fff;
-    }
-    .sku-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .sku-grid label { margin: 0 0 4px; font-weight: 500; font-size: 12px; color: #444; }
-
-    .entry-card {
-      background: #fff;
-      border: 1px solid #e2e2e4;
-      border-radius: 10px;
-      padding: 14px;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    .entry-card.editing {
-      border-color: #1a73e8;
-      box-shadow: 0 0 0 3px rgba(26,115,232,.12);
-    }
-    .editing-flag {
-      display: none;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a73e8;
-      text-transform: uppercase;
-      letter-spacing: .03em;
-      margin-bottom: 6px;
-    }
-    .entry-card.editing .editing-flag { display: block; }
-
-    .entry-actions { display: flex; gap: 10px; margin-top: 16px; }
-    .add-btn {
-      flex: 1;
-      padding: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      color: #fff;
-      background: #1a73e8;
-      border: none;
-      border-radius: 8px;
-    }
-    .cancel-btn {
-      display: none;
-      padding: 12px 16px;
-      font-size: 15px;
-      font-weight: 600;
-      color: #444;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    .entry-card.editing .cancel-btn { display: block; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid #eee; white-space: nowrap; }
-    th { color: #666; font-weight: 600; font-size: 11px; text-transform: uppercase; }
-    .table-scroll { overflow-x: auto; background: #fff; border: 1px solid #e2e2e4; border-radius: 10px; padding: 4px 10px; }
-    tfoot td { font-weight: 700; border-bottom: none; border-top: 2px solid #ddd; }
-    .empty-note { color: #888; font-size: 13px; padding: 10px 2px; }
-    tr.editing-row { background: #eaf1fd; }
-    .row-btn {
-      background: none;
-      border: none;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 3px 6px;
-    }
-    .row-btn.edit { color: #1a73e8; }
-    .row-btn.remove { color: #c5221f; }
-
-    button.submit {
-      width: 100%;
-      margin-top: 20px;
-      padding: 14px;
-      font-size: 16px;
-      font-weight: 600;
-      color: #fff;
-      background: #1a73e8;
-      border: none;
-      border-radius: 8px;
-    }
-    button.submit:disabled { background: #9bb8e8; }
-    #message {
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      display: none;
-    }
-    #message.success { display: block; background: #e6f4ea; color: #1e7e34; }
-    #message.error { display: block; background: #fce8e6; color: #c5221f; }
-    #loading { text-align: center; color: #666; padding: 40px 0; }
-
-    .recent-header { display: flex; justify-content: space-between; align-items: baseline; }
-    .refresh-btn {
-      background: none; border: none; color: #1a73e8; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0;
-    }
-  </style>
+  }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+  .table-container::-webkit-scrollbar { height: 8px; }
+  .table-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+  .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  .entry-card.editing { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+  .editing-flag { display: none; }
+  .entry-card.editing .editing-flag { display: flex; }
+  .cancel-btn { display: none; }
+  .entry-card.editing .cancel-btn { display: inline-flex; }
+  tr.editing-row { background: #eff6ff; }
+</style>
 </head>
-<body>
-  <h1>ZEN Daily Sale Entry</h1>
-  <div class="subtitle">Delivery date is recorded automatically as today. Fill in one customer at a time and tap Add - review the list below, then submit once.</div>
+<body class="text-slate-800 antialiased min-h-screen py-8">
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
-  <div id="loading">Loading...</div>
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-900 tracking-tight">ZEN Daily Sale Entry</h1>
+    <p class="mt-2 text-sm text-slate-600">
+      Delivery date is recorded automatically as today. Fill in one customer at a time and tap
+      <strong class="font-semibold text-slate-800">Add</strong> - review the list below, then submit once.
+    </p>
+  </header>
+
+  <div id="loading" class="text-center text-slate-500 py-16">Loading...</div>
 
   <form id="saleForm" style="display:none">
-    <label for="salesperson">Salesperson</label>
-    <select id="salesperson" required></select>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="space-y-8">
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <label class="block text-sm font-semibold text-slate-700 mb-2" for="salesperson">Salesperson</label>
+          <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="salesperson" required>
+            <option value="">Select a salesperson...</option>
+          </select>
+        </section>
 
-    <h2>Add a customer</h2>
-    <div class="entry-card" id="entryCard">
-      <div class="editing-flag">Editing entry #<span id="editingNumber"></span> - Update or Cancel below</div>
+        <section class="entry-card bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden" id="entryCard">
+          <div class="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-slate-800">Add a customer</h2>
+            <div class="editing-flag items-center gap-1 text-xs font-bold text-primary-600 uppercase tracking-wide">
+              Editing entry #<span id="editingNumber"></span>
+            </div>
+          </div>
+          <div class="p-6 space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2" for="entryCustomer">Customer</label>
+              <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="entryCustomer">
+                <option value="">Select customer...</option>
+              </select>
+            </div>
 
-      <label for="entryCustomer">Customer</label>
-      <select id="entryCustomer"></select>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-4 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wider">Still Water</h3>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStill6">6pc Box</label>
+                    <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStill6" min="0" step="1" type="number" value="0">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStill20">20pc Crate</label>
+                    <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStill20" min="0" step="1" type="number" value="0">
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-4 bg-emerald-50/50 p-4 rounded-lg border border-emerald-100">
+                <h3 class="text-sm font-semibold text-emerald-800 uppercase tracking-wider">Sparkling Water</h3>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparkling6">6pc Box</label>
+                    <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparkling6" min="0" step="1" type="number" value="0">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparkling20">20pc Crate</label>
+                    <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparkling20" min="0" step="1" type="number" value="0">
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      <div class="sku-grid">
-        <div>
-          <label>Still - 6pc Box</label>
-          <input type="number" id="entryStill6" min="0" step="1" value="0">
-        </div>
-        <div>
-          <label>Still - 20pc Crate</label>
-          <input type="number" id="entryStill20" min="0" step="1" value="0">
-        </div>
-        <div>
-          <label>Sparkling - 6pc Box</label>
-          <input type="number" id="entrySparkling6" min="0" step="1" value="0">
-        </div>
-        <div>
-          <label>Sparkling - 20pc Crate</label>
-          <input type="number" id="entrySparkling20" min="0" step="1" value="0">
-        </div>
+            <div class="pt-2 flex gap-3">
+              <button class="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors" type="button" id="addBtn">
+                Add to list
+              </button>
+              <button class="cancel-btn justify-center py-3 px-4 border border-slate-300 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors" type="button" id="cancelBtn">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <div class="entry-actions">
-        <button type="button" class="add-btn" id="addBtn">Add to list</button>
-        <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+      <div>
+        <section class="space-y-4">
+          <h2 class="text-xl font-bold text-slate-800">Review before submitting</h2>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200" id="summaryTable">
+                <thead class="bg-slate-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 6</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 20</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 6</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 20</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+                    <th class="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-100" id="summaryBody"></tbody>
+                <tfoot class="bg-slate-50 border-t border-slate-200">
+                  <tr>
+                    <th class="px-6 py-4 text-right text-sm font-bold text-slate-900" colspan="5">Grand Total</th>
+                    <td class="px-4 py-4 text-right text-sm font-bold text-slate-900" id="grandTotal">0</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+          <button class="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-md text-base font-bold text-white bg-primary-600 hover:bg-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed focus:outline-none transition-colors" type="submit" id="submitBtn" disabled>
+            Submit All
+          </button>
+          <div id="message" class="hidden rounded-lg px-4 py-3 text-sm font-medium"></div>
+        </section>
       </div>
     </div>
-
-    <h2>Review before submitting</h2>
-    <div class="table-scroll">
-      <table id="summaryTable">
-        <thead>
-          <tr><th>Customer</th><th>Still 6</th><th>Still 20</th><th>Spk 6</th><th>Spk 20</th><th>Total</th><th></th></tr>
-        </thead>
-        <tbody id="summaryBody"></tbody>
-        <tfoot><tr><td>Grand total</td><td></td><td></td><td></td><td></td><td id="grandTotal">0</td><td></td></tr></tfoot>
-      </table>
-    </div>
-
-    <button type="submit" class="submit" id="submitBtn">Submit All</button>
-    <div id="message"></div>
   </form>
 
-  <h2 class="recent-header">
-    <span>Last 2 days (all reps) - check before you submit</span>
-    <button type="button" class="refresh-btn" id="refreshRecent">Refresh</button>
-  </h2>
-  <div class="table-scroll">
-    <table id="recentTable">
-      <thead>
-        <tr><th>When</th><th>Rep</th><th>Customer</th><th>Still 6</th><th>Still 20</th><th>Spk 6</th><th>Spk 20</th><th>Total</th></tr>
-      </thead>
-      <tbody id="recentBody"></tbody>
-    </table>
-  </div>
+  <section class="pt-8 border-t border-slate-200 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-bold text-slate-800">Last 2 days (all reps) - check before you submit</h2>
+      <button class="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center" type="button" id="refreshRecent">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        Refresh
+      </button>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="overflow-x-auto table-container">
+        <table class="min-w-full divide-y divide-slate-200" id="recentTable">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">When</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Rep</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 6</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 20</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 6</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 20</th>
+              <th class="px-4 py-3 text-right text-xs font-bold text-slate-700 uppercase tracking-wider bg-slate-100">Total</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-100 text-sm" id="recentBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
 
-  <script>
-    // Apps Script web app deployment with "Anyone, even anonymous" access -
-    // this is what keeps the page from ever hitting Google's account-chooser
-    // interstitial (the thing that was crashing on devices with multiple
-    // signed-in Google accounts). Never point this at a sign-in-required
-    // deployment.
-    var API_URL = 'https://script.google.com/macros/s/AKfycbzjpZpVpf3TGzuXRT-U4cwaba7avlkZcRaVXN-LaOeqP5iFZT8d3WrCD9MsYW5wk2UfSg/exec';
-    var API_KEY = '644c03e92928ea6d4f2a35b4b4a869e075a74719dd95cc70';
+<script>
+  // Apps Script web app deployment with "Anyone, even anonymous" access -
+  // this is what keeps the page from ever hitting Google's account-chooser
+  // interstitial (the thing that was crashing on devices with multiple
+  // signed-in Google accounts). Never point this at a sign-in-required
+  // deployment.
+  var API_URL = 'https://script.google.com/macros/s/AKfycbzjpZpVpf3TGzuXRT-U4cwaba7avlkZcRaVXN-LaOeqP5iFZT8d3WrCD9MsYW5wk2UfSg/exec';
+  var API_KEY = '644c03e92928ea6d4f2a35b4b4a869e075a74719dd95cc70';
 
-    var customerNames = [];
-    var lines = [];
-    var editingIndex = null;
+  var customerNames = [];
+  var lines = [];
+  var editingIndex = null;
 
-    function showMessage(text, kind) {
-      var el = document.getElementById('message');
-      el.textContent = text;
-      el.className = kind || '';
-    }
+  function showMessage(text, kind) {
+    var el = document.getElementById('message');
+    el.textContent = text;
+    el.className = 'rounded-lg px-4 py-3 text-sm font-medium ' +
+      (kind === 'success' ? 'bg-emerald-50 text-emerald-700' :
+       kind === 'error' ? 'bg-red-50 text-red-700' : 'hidden');
+  }
 
-    function populateSelect(select, values, placeholder) {
-      select.innerHTML = '';
-      var ph = document.createElement('option');
-      ph.value = '';
-      ph.textContent = placeholder;
-      select.appendChild(ph);
-      values.forEach(function(v) {
-        var opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = v;
-        select.appendChild(opt);
-      });
-    }
-
-    function readCard() {
-      return {
-        customer: document.getElementById('entryCustomer').value,
-        still6: Number(document.getElementById('entryStill6').value) || 0,
-        still20: Number(document.getElementById('entryStill20').value) || 0,
-        sparkling6: Number(document.getElementById('entrySparkling6').value) || 0,
-        sparkling20: Number(document.getElementById('entrySparkling20').value) || 0
-      };
-    }
-
-    function cardIsBlank() {
-      var c = readCard();
-      return !c.customer && c.still6 + c.still20 + c.sparkling6 + c.sparkling20 === 0;
-    }
-
-    function writeCard(line) {
-      document.getElementById('entryCustomer').value = line.customer;
-      document.getElementById('entryStill6').value = line.still6;
-      document.getElementById('entryStill20').value = line.still20;
-      document.getElementById('entrySparkling6').value = line.sparkling6;
-      document.getElementById('entrySparkling20').value = line.sparkling20;
-    }
-
-    function clearCard() {
-      writeCard({ customer: '', still6: 0, still20: 0, sparkling6: 0, sparkling20: 0 });
-    }
-
-    function setEditing(index) {
-      editingIndex = index;
-      var card = document.getElementById('entryCard');
-      if (index === null) {
-        card.classList.remove('editing');
-        document.getElementById('addBtn').textContent = 'Add to list';
-        clearCard();
-      } else {
-        card.classList.add('editing');
-        document.getElementById('editingNumber').textContent = index + 1;
-        document.getElementById('addBtn').textContent = 'Update entry';
-        writeCard(lines[index]);
-      }
-      renderSummary();
-    }
-
-    function renderSummary() {
-      var body = document.getElementById('summaryBody');
-      body.innerHTML = '';
-      var grand = 0;
-      if (!lines.length) {
-        var tr = document.createElement('tr');
-        var td = document.createElement('td');
-        td.colSpan = 7;
-        td.className = 'empty-note';
-        td.textContent = 'Nothing added yet - fill in the card above and tap "Add to list".';
-        tr.appendChild(td);
-        body.appendChild(tr);
-      } else {
-        lines.forEach(function(l, i) {
-          var total = l.still6 + l.still20 + l.sparkling6 + l.sparkling20;
-          grand += total;
-          var tr = document.createElement('tr');
-          if (i === editingIndex) tr.className = 'editing-row';
-          [l.customer, l.still6, l.still20, l.sparkling6, l.sparkling20, total].forEach(function(v) {
-            var td = document.createElement('td');
-            td.textContent = v;
-            tr.appendChild(td);
-          });
-          var actionsTd = document.createElement('td');
-          var editBtn = document.createElement('button');
-          editBtn.type = 'button';
-          editBtn.className = 'row-btn edit';
-          editBtn.textContent = 'Edit';
-          editBtn.addEventListener('click', function() { setEditing(i); });
-          var removeBtn = document.createElement('button');
-          removeBtn.type = 'button';
-          removeBtn.className = 'row-btn remove';
-          removeBtn.textContent = 'Remove';
-          removeBtn.addEventListener('click', function() {
-            lines.splice(i, 1);
-            if (editingIndex === i) { editingIndex = null; clearCard(); document.getElementById('entryCard').classList.remove('editing'); document.getElementById('addBtn').textContent = 'Add to list'; }
-            else if (editingIndex !== null && editingIndex > i) { editingIndex--; }
-            renderSummary();
-          });
-          actionsTd.appendChild(editBtn);
-          actionsTd.appendChild(removeBtn);
-          tr.appendChild(actionsTd);
-          body.appendChild(tr);
-        });
-      }
-      document.getElementById('grandTotal').textContent = grand;
-      document.getElementById('submitBtn').disabled = lines.length === 0;
-    }
-
-    document.getElementById('addBtn').addEventListener('click', function() {
-      var line = readCard();
-      if (!line.customer) {
-        showMessage('Select a customer before adding.', 'error');
-        return;
-      }
-      if (line.still6 + line.still20 + line.sparkling6 + line.sparkling20 === 0) {
-        showMessage('Enter at least one quantity greater than zero.', 'error');
-        return;
-      }
-      showMessage('', '');
-      if (editingIndex !== null) {
-        lines[editingIndex] = line;
-      } else {
-        lines.push(line);
-      }
-      setEditing(null);
+  function populateSelect(select, values, placeholder) {
+    select.innerHTML = '';
+    var ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholder;
+    select.appendChild(ph);
+    values.forEach(function(v) {
+      var opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      select.appendChild(opt);
     });
+  }
 
-    document.getElementById('cancelBtn').addEventListener('click', function() {
-      showMessage('', '');
-      setEditing(null);
-    });
+  function readCard() {
+    return {
+      customer: document.getElementById('entryCustomer').value,
+      still6: Number(document.getElementById('entryStill6').value) || 0,
+      still20: Number(document.getElementById('entryStill20').value) || 0,
+      sparkling6: Number(document.getElementById('entrySparkling6').value) || 0,
+      sparkling20: Number(document.getElementById('entrySparkling20').value) || 0
+    };
+  }
 
-    function formatWhen(iso) {
-      if (!iso) return '';
-      var d = new Date(iso);
-      var today = new Date();
-      var isToday = d.toDateString() === today.toDateString();
-      var time = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-      return isToday ? time : d.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + time;
+  function cardIsBlank() {
+    var c = readCard();
+    return !c.customer && c.still6 + c.still20 + c.sparkling6 + c.sparkling20 === 0;
+  }
+
+  function writeCard(line) {
+    document.getElementById('entryCustomer').value = line.customer;
+    document.getElementById('entryStill6').value = line.still6;
+    document.getElementById('entryStill20').value = line.still20;
+    document.getElementById('entrySparkling6').value = line.sparkling6;
+    document.getElementById('entrySparkling20').value = line.sparkling20;
+  }
+
+  function clearCard() {
+    writeCard({ customer: '', still6: 0, still20: 0, sparkling6: 0, sparkling20: 0 });
+  }
+
+  function setEditing(index) {
+    editingIndex = index;
+    var card = document.getElementById('entryCard');
+    var addBtn = document.getElementById('addBtn');
+    if (index === null) {
+      card.classList.remove('editing');
+      addBtn.textContent = 'Add to list';
+      clearCard();
+    } else {
+      card.classList.add('editing');
+      document.getElementById('editingNumber').textContent = index + 1;
+      addBtn.textContent = 'Update entry';
+      writeCard(lines[index]);
     }
+    renderSummary();
+  }
 
-    function renderRecent(recent) {
-      var body = document.getElementById('recentBody');
-      body.innerHTML = '';
-      if (!recent || !recent.length) {
+  function actionBtn(label, extraClass) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = label;
+    btn.className = 'text-xs font-semibold ' + extraClass;
+    return btn;
+  }
+
+  function renderSummary() {
+    var body = document.getElementById('summaryBody');
+    body.innerHTML = '';
+    var grand = 0;
+    if (!lines.length) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 7;
+      td.className = 'px-6 py-8 text-sm text-slate-500 text-center italic';
+      td.textContent = 'Nothing added yet - fill in the card above and tap "Add to list".';
+      tr.appendChild(td);
+      body.appendChild(tr);
+    } else {
+      lines.forEach(function(l, i) {
+        var total = l.still6 + l.still20 + l.sparkling6 + l.sparkling20;
+        grand += total;
         var tr = document.createElement('tr');
-        var td = document.createElement('td');
-        td.colSpan = 8;
-        td.className = 'empty-note';
-        td.textContent = 'No submissions in the last 2 days yet.';
-        tr.appendChild(td);
-        body.appendChild(tr);
-        return;
-      }
-      recent.forEach(function(r) {
-        var tr = document.createElement('tr');
-        [formatWhen(r.timestamp), r.salesperson, r.customer, r.still6, r.still20, r.sparkling6, r.sparkling20, r.total].forEach(function(v) {
+        tr.className = i === editingIndex ? 'editing-row' : 'hover:bg-slate-50 transition-colors';
+        var custTd = document.createElement('td');
+        custTd.className = 'px-6 py-3 text-sm text-slate-700';
+        custTd.textContent = l.customer;
+        tr.appendChild(custTd);
+        [l.still6, l.still20, l.sparkling6, l.sparkling20].forEach(function(v) {
           var td = document.createElement('td');
+          td.className = 'px-4 py-3 text-sm text-right text-slate-600';
           td.textContent = v;
           tr.appendChild(td);
         });
+        var totalTd = document.createElement('td');
+        totalTd.className = 'px-4 py-3 text-sm text-right font-bold text-slate-800';
+        totalTd.textContent = total;
+        tr.appendChild(totalTd);
+
+        var actionsTd = document.createElement('td');
+        actionsTd.className = 'px-4 py-3 text-right whitespace-nowrap';
+        var editBtn = actionBtn('Edit', 'text-primary-600 hover:text-primary-700 mr-3');
+        editBtn.addEventListener('click', function() { setEditing(i); });
+        var removeBtn = actionBtn('Remove', 'text-red-600 hover:text-red-700');
+        removeBtn.addEventListener('click', function() {
+          lines.splice(i, 1);
+          if (editingIndex === i) { setEditing(null); }
+          else if (editingIndex !== null && editingIndex > i) { editingIndex--; renderSummary(); }
+          else { renderSummary(); }
+        });
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(removeBtn);
+        tr.appendChild(actionsTd);
         body.appendChild(tr);
       });
     }
+    document.getElementById('grandTotal').textContent = grand;
+    document.getElementById('submitBtn').disabled = lines.length === 0;
+  }
 
-    document.getElementById('refreshRecent').addEventListener('click', function() {
-      fetch(API_URL + '?api=recentActivity&key=' + encodeURIComponent(API_KEY))
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (data && data.error) { showMessage(data.error, 'error'); return; }
-          renderRecent(data);
-        })
-        .catch(function(err) { showMessage('Failed to refresh: ' + err.message, 'error'); });
+  document.getElementById('addBtn').addEventListener('click', function() {
+    var line = readCard();
+    if (!line.customer) { showMessage('Select a customer before adding.', 'error'); return; }
+    if (line.still6 + line.still20 + line.sparkling6 + line.sparkling20 === 0) {
+      showMessage('Enter at least one quantity greater than zero.', 'error');
+      return;
+    }
+    showMessage('', '');
+    if (editingIndex !== null) { lines[editingIndex] = line; } else { lines.push(line); }
+    setEditing(null);
+  });
+
+  document.getElementById('cancelBtn').addEventListener('click', function() {
+    showMessage('', '');
+    setEditing(null);
+  });
+
+  function formatWhen(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    var today = new Date();
+    var isToday = d.toDateString() === today.toDateString();
+    var time = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    return isToday ? time : d.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + time;
+  }
+
+  function renderRecent(recent) {
+    var body = document.getElementById('recentBody');
+    body.innerHTML = '';
+    if (!recent || !recent.length) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 8;
+      td.className = 'px-4 py-6 text-sm text-slate-500 text-center italic';
+      td.textContent = 'No submissions in the last 2 days yet.';
+      tr.appendChild(td);
+      body.appendChild(tr);
+      return;
+    }
+    recent.forEach(function(r) {
+      var tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-50 transition-colors';
+      var whenTd = document.createElement('td');
+      whenTd.className = 'px-4 py-3 whitespace-nowrap text-slate-500';
+      whenTd.textContent = formatWhen(r.timestamp);
+      tr.appendChild(whenTd);
+      var repTd = document.createElement('td');
+      repTd.className = 'px-4 py-3 whitespace-nowrap text-slate-700 font-medium';
+      repTd.textContent = r.salesperson;
+      tr.appendChild(repTd);
+      var custTd = document.createElement('td');
+      custTd.className = 'px-4 py-3 text-slate-700';
+      custTd.textContent = r.customer;
+      tr.appendChild(custTd);
+      [r.still6, r.still20, r.sparkling6, r.sparkling20].forEach(function(v) {
+        var td = document.createElement('td');
+        td.className = 'px-4 py-3 whitespace-nowrap text-right text-slate-600';
+        td.textContent = v;
+        tr.appendChild(td);
+      });
+      var totalTd = document.createElement('td');
+      totalTd.className = 'px-4 py-3 whitespace-nowrap text-right font-bold text-slate-800 bg-slate-50';
+      totalTd.textContent = r.total;
+      tr.appendChild(totalTd);
+      body.appendChild(tr);
     });
+  }
 
-    fetch(API_URL + '?api=formData&key=' + encodeURIComponent(API_KEY))
+  document.getElementById('refreshRecent').addEventListener('click', function() {
+    fetch(API_URL + '?api=recentActivity&key=' + encodeURIComponent(API_KEY))
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (data && data.error) throw new Error(data.error);
-        customerNames = data.customers.map(function(c) { return c.name; });
-        populateSelect(document.getElementById('salesperson'), data.salespeople, 'Select...');
-        populateSelect(document.getElementById('entryCustomer'), customerNames, 'Select customer...');
-        renderSummary();
-        renderRecent(data.recent);
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('saleForm').style.display = 'block';
+        if (data && data.error) { showMessage(data.error, 'error'); return; }
+        renderRecent(data);
+      })
+      .catch(function(err) { showMessage('Failed to refresh: ' + err.message, 'error'); });
+  });
+
+  fetch(API_URL + '?api=formData&key=' + encodeURIComponent(API_KEY))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.error) throw new Error(data.error);
+      customerNames = data.customers.map(function(c) { return c.name; });
+      populateSelect(document.getElementById('salesperson'), data.salespeople, 'Select a salesperson...');
+      populateSelect(document.getElementById('entryCustomer'), customerNames, 'Select customer...');
+      renderSummary();
+      renderRecent(data.recent);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('saleForm').style.display = 'block';
+    })
+    .catch(function(err) {
+      document.getElementById('loading').textContent = 'Failed to load: ' + err.message;
+    });
+
+  document.getElementById('saleForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('submitBtn');
+    var salesperson = document.getElementById('salesperson').value;
+    if (!salesperson) { showMessage('Select a salesperson.', 'error'); return; }
+    if (!cardIsBlank()) {
+      showMessage('You have an unfinished entry in the card above - tap "Add to list" (or clear it) before submitting.', 'error');
+      return;
+    }
+    if (!lines.length) { showMessage('Add at least one customer to the list before submitting.', 'error'); return; }
+    btn.disabled = true;
+    showMessage('', '');
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'submitBatch', key: API_KEY, payload: { salesperson: salesperson, lines: lines } })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        btn.disabled = false;
+        if (result && result.error) { showMessage(result.error, 'error'); return; }
+        showMessage('Saved ' + result.count + ' customer(s), ' + result.grandTotal + ' units total.', 'success');
+        lines = [];
+        setEditing(null);
+        renderRecent(result.recent);
       })
       .catch(function(err) {
-        document.getElementById('loading').textContent = 'Failed to load: ' + err.message;
+        btn.disabled = false;
+        showMessage(err.message, 'error');
       });
-
-    document.getElementById('saleForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var btn = document.getElementById('submitBtn');
-      var salesperson = document.getElementById('salesperson').value;
-      if (!salesperson) {
-        showMessage('Select a salesperson.', 'error');
-        return;
-      }
-      if (!cardIsBlank()) {
-        showMessage('You have an unfinished entry in the card above - tap "Add to list" (or clear it) before submitting.', 'error');
-        return;
-      }
-      if (!lines.length) {
-        showMessage('Add at least one customer to the list before submitting.', 'error');
-        return;
-      }
-      btn.disabled = true;
-      showMessage('', '');
-
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'submitBatch', key: API_KEY, payload: { salesperson: salesperson, lines: lines } })
-      })
-        .then(function(r) { return r.json(); })
-        .then(function(result) {
-          btn.disabled = false;
-          if (result && result.error) { showMessage(result.error, 'error'); return; }
-          showMessage('Saved ' + result.count + ' customer(s), ' + result.grandTotal + ' units total.', 'success');
-          lines = [];
-          setEditing(null);
-          renderRecent(result.recent);
-        })
-        .catch(function(err) {
-          btn.disabled = false;
-          showMessage(err.message, 'error');
-        });
-    });
-  </script>
+  });
+</script>
 </body>
 </html>
