@@ -31,13 +31,22 @@
   .cancel-btn { display: none; }
   .entry-card.editing .cancel-btn { display: inline-flex; }
   tr.editing-row { background: #eff6ff; }
+  .tab-btn { padding: 8px 16px; font-size: 14px; font-weight: 600; border-radius: 8px; color: #64748b; }
+  .tab-btn.active { background: #1a73e8; background: #2563eb; color: #fff; }
+  .autocomplete-panel { max-height: 14rem; overflow-y: auto; }
+  .autocomplete-row.active { background: #eff6ff; }
+  .status-badge { display: inline-flex; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+  .status-Prospect { background: #f1f5f9; color: #475569; }
+  .status-Open---In-Discussion { background: #fef9c3; color: #854d0e; }
+  .status-Active---Pending { background: #dbeafe; color: #1d4ed8; }
+  .status-Inactive { background: #fee2e2; color: #b91c1c; }
 </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen py-8">
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
-  <header class="mb-8">
-    <h1 class="text-3xl font-bold text-slate-900 tracking-tight">ZEN Daily Sale Entry</h1>
+  <header class="mb-2">
+    <h1 class="text-3xl font-bold text-slate-900 tracking-tight">ZEN Sales Tracker</h1>
     <p class="mt-2 text-sm text-slate-600">
       Delivery date is recorded automatically as today. Fill in one customer at a time and tap
       <strong class="font-semibold text-slate-800">Add</strong> - review the list below, then submit once.
@@ -46,140 +55,163 @@
 
   <div id="loading" class="text-center text-slate-500 py-16">Loading...</div>
 
-  <form id="saleForm" style="display:none">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div class="space-y-8">
-        <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <label class="block text-sm font-semibold text-slate-700 mb-2" for="salesperson">Salesperson</label>
-          <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="salesperson" required>
-            <option value="">Select a salesperson...</option>
-          </select>
-        </section>
+  <div id="app" style="display:none" class="space-y-8">
+    <div class="flex items-center gap-2">
+      <button type="button" class="tab-btn active" id="tabDeliveryBtn">Log Delivery</button>
+      <button type="button" class="tab-btn" id="tabLeadsBtn">My Leads</button>
+    </div>
 
-        <section class="entry-card bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden" id="entryCard">
-          <div class="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-slate-800">Add a customer</h2>
-            <div class="editing-flag items-center gap-1 text-xs font-bold text-primary-600 uppercase tracking-wide">
-              Editing entry #<span id="editingNumber"></span>
-            </div>
-          </div>
-          <div class="p-6 space-y-6">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <label class="block text-sm font-medium text-slate-700" for="entryCustomer">Customer</label>
-                <button type="button" id="newCustomerBtn" class="text-xs font-semibold text-primary-600 hover:text-primary-700">+ New customer</button>
-              </div>
-              <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="entryCustomer">
-                <option value="">Select customer...</option>
-              </select>
-            </div>
+    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+      <label class="block text-sm font-semibold text-slate-700 mb-2" for="salesperson">Salesperson</label>
+      <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="salesperson" required>
+        <option value="">Select a salesperson...</option>
+      </select>
+    </section>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="space-y-4 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wider">Still Water</h3>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStill6">6pc Box</label>
-                    <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStill6" min="0" step="1" type="number" value="0">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStill20">20pc Crate</label>
-                    <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStill20" min="0" step="1" type="number" value="0">
-                  </div>
+    <div id="deliveryTab">
+      <form id="saleForm">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="space-y-8">
+            <section class="entry-card bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden" id="entryCard">
+              <div class="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-800">Add a customer</h2>
+                <div class="editing-flag items-center gap-1 text-xs font-bold text-primary-600 uppercase tracking-wide">
+                  Editing entry #<span id="editingNumber"></span>
                 </div>
               </div>
-              <div class="space-y-4 bg-emerald-50/50 p-4 rounded-lg border border-emerald-100">
-                <h3 class="text-sm font-semibold text-emerald-800 uppercase tracking-wider">Sparkling Water</h3>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparkling6">6pc Box</label>
-                    <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparkling6" min="0" step="1" type="number" value="0">
+              <div class="p-6 space-y-6">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-medium text-slate-700" for="entryCustomer">Customer</label>
+                    <button type="button" id="newCustomerBtn" class="text-xs font-semibold text-primary-600 hover:text-primary-700">+ New customer</button>
                   </div>
-                  <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparkling20">20pc Crate</label>
-                    <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparkling20" min="0" step="1" type="number" value="0">
+                  <div class="relative">
+                    <input class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="entryCustomer" type="text" autocomplete="off" placeholder="Type to search...">
+                    <div id="entryCustomerPanel" class="autocomplete-panel hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg"></div>
                   </div>
                 </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="space-y-4 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                    <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wider">Still Water</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStill6">6pc Box</label>
+                        <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStill6" min="0" step="1" type="number" value="0">
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStill20">20pc Crate</label>
+                        <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStill20" min="0" step="1" type="number" value="0">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="space-y-4 bg-emerald-50/50 p-4 rounded-lg border border-emerald-100">
+                    <h3 class="text-sm font-semibold text-emerald-800 uppercase tracking-wider">Sparkling Water</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparkling6">6pc Box</label>
+                        <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparkling6" min="0" step="1" type="number" value="0">
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparkling20">20pc Crate</label>
+                        <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparkling20" min="0" step="1" type="number" value="0">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                  <button class="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors" type="button" id="addBtn">
+                    Add to list
+                  </button>
+                  <button class="cancel-btn justify-center py-3 px-4 border border-slate-300 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors" type="button" id="cancelBtn">
+                    Cancel
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div class="pt-2 flex gap-3">
-              <button class="flex-1 flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors" type="button" id="addBtn">
-                Add to list
-              </button>
-              <button class="cancel-btn justify-center py-3 px-4 border border-slate-300 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors" type="button" id="cancelBtn">
-                Cancel
-              </button>
-            </div>
+            </section>
           </div>
-        </section>
-      </div>
 
-      <div>
-        <section class="space-y-4">
-          <h2 class="text-xl font-bold text-slate-800">Review before submitting</h2>
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-slate-200" id="summaryTable">
-                <thead class="bg-slate-50">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 6</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 20</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 6</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 20</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
-                    <th class="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-slate-100" id="summaryBody"></tbody>
-                <tfoot class="bg-slate-50 border-t border-slate-200">
-                  <tr>
-                    <th class="px-6 py-4 text-right text-sm font-bold text-slate-900" colspan="5">Grand Total</th>
-                    <td class="px-4 py-4 text-right text-sm font-bold text-slate-900" id="grandTotal">0</td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+          <div>
+            <section class="space-y-4">
+              <h2 class="text-xl font-bold text-slate-800">Review before submitting</h2>
+              <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-slate-200" id="summaryTable">
+                    <thead class="bg-slate-50">
+                      <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 6</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 20</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 6</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 20</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+                        <th class="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-100" id="summaryBody"></tbody>
+                    <tfoot class="bg-slate-50 border-t border-slate-200">
+                      <tr>
+                        <th class="px-6 py-4 text-right text-sm font-bold text-slate-900" colspan="5">Grand Total</th>
+                        <td class="px-4 py-4 text-right text-sm font-bold text-slate-900" id="grandTotal">0</td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+              <button class="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-md text-base font-bold text-white bg-primary-600 hover:bg-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed focus:outline-none transition-colors" type="submit" id="submitBtn" disabled>
+                Submit All
+              </button>
+              <div id="message" class="hidden rounded-lg px-4 py-3 text-sm font-medium"></div>
+            </section>
           </div>
-          <button class="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-md text-base font-bold text-white bg-primary-600 hover:bg-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed focus:outline-none transition-colors" type="submit" id="submitBtn" disabled>
-            Submit All
+        </div>
+      </form>
+
+      <section class="pt-8 border-t border-slate-200 space-y-4 mt-8">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold text-slate-800">Last 2 days (all reps) - check before you submit</h2>
+          <button class="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center" type="button" id="refreshRecent">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            Refresh
           </button>
-          <div id="message" class="hidden rounded-lg px-4 py-3 text-sm font-medium"></div>
-        </section>
-      </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto table-container">
+            <table class="min-w-full divide-y divide-slate-200" id="recentTable">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">When</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Rep</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 6</th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 20</th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 6</th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 20</th>
+                  <th class="px-4 py-3 text-right text-xs font-bold text-slate-700 uppercase tracking-wider bg-slate-100">Total</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-slate-100 text-sm" id="recentBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </div>
-  </form>
 
-  <section class="pt-8 border-t border-slate-200 space-y-4">
-    <div class="flex items-center justify-between">
-      <h2 class="text-lg font-bold text-slate-800">Last 2 days (all reps) - check before you submit</h2>
-      <button class="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center" type="button" id="refreshRecent">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
-        Refresh
-      </button>
+    <div id="leadsTab" class="hidden space-y-4">
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">My targets</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Open leads assigned to the salesperson selected above.</p>
+          </div>
+          <button type="button" id="findTargetBtn" class="text-xs font-semibold text-primary-600 hover:text-primary-700 whitespace-nowrap">+ Find new target</button>
+        </div>
+        <div id="leadsList"></div>
+      </section>
     </div>
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="overflow-x-auto table-container">
-        <table class="min-w-full divide-y divide-slate-200" id="recentTable">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">When</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Rep</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 6</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 20</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 6</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 20</th>
-              <th class="px-4 py-3 text-right text-xs font-bold text-slate-700 uppercase tracking-wider bg-slate-100">Total</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-slate-100 text-sm" id="recentBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
+  </div>
 </main>
 
 <div id="newCustomerModal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
@@ -194,9 +226,10 @@
           Creates the customer as <b>Active - Pending</b> so you can log today's delivery to them right away.
           An admin will review and confirm the account.
         </p>
-        <div>
+        <div class="relative">
           <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustName">Customer name</label>
-          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustName" type="text" required>
+          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustName" type="text" autocomplete="off" required>
+          <div id="newCustNamePanel" class="autocomplete-panel hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg"></div>
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustChannel">Channel</label>
@@ -228,6 +261,65 @@
   </div>
 </div>
 
+<div id="browseModal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-lg flex flex-col" style="max-height:80vh">
+    <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-800">Find a new target</h2>
+      <button type="button" id="browseCancel" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <div class="p-4 border-b border-slate-200">
+      <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="browseSearch" type="text" placeholder="Search company name...">
+    </div>
+    <div id="browseResults" class="overflow-y-auto flex-1 divide-y divide-slate-100"></div>
+    <div class="p-4 border-t border-slate-200 text-center">
+      <button type="button" id="browseAddNew" class="text-sm font-semibold text-primary-600 hover:text-primary-700">Can't find it? Add a new company</button>
+    </div>
+  </div>
+</div>
+
+<div id="addLeadModal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+    <form id="addLeadForm">
+      <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-800">Add as a target</h2>
+        <button type="button" id="addLeadCancel" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="relative">
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="leadName">Company name</label>
+          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="leadName" type="text" autocomplete="off" required>
+          <div id="leadNamePanel" class="autocomplete-panel hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg"></div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="leadBusinessType">Industry / business type</label>
+          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="leadBusinessType" type="text">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="leadChannel">Channel (if known)</label>
+          <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="leadChannel">
+            <option value="">Not sure yet</option>
+            <option value="HORECA">HORECA</option>
+            <option value="Supermarket">Supermarket</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="leadNote">Note</label>
+          <textarea class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="leadNote" rows="2" placeholder="What's the plan with this one?"></textarea>
+        </div>
+        <div id="addLeadMessage" class="hidden rounded-lg px-4 py-3 text-sm font-medium"></div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-200 flex gap-3">
+        <button type="submit" id="addLeadSubmit" class="flex-1 flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none transition-colors">
+          Add as target
+        </button>
+        <button type="button" id="addLeadCancel2" class="py-2.5 px-4 border border-slate-300 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   // Apps Script web app deployment with "Anyone, even anonymous" access -
   // this is what keeps the page from ever hitting Google's account-chooser
@@ -236,11 +328,96 @@
   // deployment.
   var API_URL = 'https://script.google.com/macros/s/AKfycbzjpZpVpf3TGzuXRT-U4cwaba7avlkZcRaVXN-LaOeqP5iFZT8d3WrCD9MsYW5wk2UfSg/exec';
   var API_KEY = '644c03e92928ea6d4f2a35b4b4a869e075a74719dd95cc70';
+  var SELLABLE_STATUSES = ['Active - Won', 'Active - Pending'];
 
-  var customerNames = [];
+  var customerNames = [];       // sellable names only - what the delivery-entry field must match
+  var customerItems = [];       // {label, value, sub} for the delivery-entry autocomplete
+  var allCustomerItems = [];    // every customer/lead regardless of status - for dedupe-as-you-type
+  var karibuCompanies = null;   // loaded lazily when Browse is first opened
   var lines = [];
   var editingIndex = null;
 
+  // ---------- generic autocomplete ----------
+  function filterItems(items, query, limit) {
+    query = (query || '').trim().toLowerCase();
+    limit = limit || 8;
+    if (!query) return items.slice(0, limit);
+    var starts = [], contains = [];
+    items.forEach(function(item) {
+      var l = item.label.toLowerCase();
+      if (l.indexOf(query) === 0) starts.push(item);
+      else if (l.indexOf(query) !== -1) contains.push(item);
+    });
+    return starts.concat(contains).slice(0, limit);
+  }
+
+  function attachAutocomplete(input, panel, getItems, onSelect) {
+    var current = [];
+    var activeIndex = -1;
+
+    function renderPanel(items) {
+      current = items;
+      activeIndex = -1;
+      panel.innerHTML = '';
+      if (!items.length) { panel.classList.add('hidden'); return; }
+      items.forEach(function(item, i) {
+        var row = document.createElement('div');
+        row.className = 'autocomplete-row px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 flex justify-between items-center gap-2';
+        var label = document.createElement('span');
+        label.textContent = item.label;
+        row.appendChild(label);
+        if (item.sub) {
+          var sub = document.createElement('span');
+          sub.className = 'text-xs text-slate-400 whitespace-nowrap';
+          sub.textContent = item.sub;
+          row.appendChild(sub);
+        }
+        row.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          panel.classList.add('hidden');
+          onSelect(item);
+        });
+        panel.appendChild(row);
+      });
+      panel.classList.remove('hidden');
+    }
+
+    function highlight(index) {
+      activeIndex = index;
+      Array.prototype.forEach.call(panel.children, function(el, i) {
+        el.classList.toggle('active', i === index);
+      });
+    }
+
+    input.addEventListener('input', function() { renderPanel(getItems(input.value)); });
+    input.addEventListener('focus', function() { renderPanel(getItems(input.value)); });
+    input.addEventListener('keydown', function(e) {
+      if (panel.classList.contains('hidden')) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); highlight(Math.min(activeIndex + 1, current.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(Math.max(activeIndex - 1, 0)); }
+      else if (e.key === 'Enter') { if (activeIndex >= 0) { e.preventDefault(); panel.classList.add('hidden'); onSelect(current[activeIndex]); } }
+      else if (e.key === 'Escape') { panel.classList.add('hidden'); }
+    });
+    input.addEventListener('blur', function() { setTimeout(function() { panel.classList.add('hidden'); }, 120); });
+  }
+
+  // ---------- tabs ----------
+  document.getElementById('tabDeliveryBtn').addEventListener('click', function() { showTab('delivery'); });
+  document.getElementById('tabLeadsBtn').addEventListener('click', function() { showTab('leads'); });
+
+  function showTab(name) {
+    document.getElementById('deliveryTab').classList.toggle('hidden', name !== 'delivery');
+    document.getElementById('leadsTab').classList.toggle('hidden', name !== 'leads');
+    document.getElementById('tabDeliveryBtn').classList.toggle('active', name === 'delivery');
+    document.getElementById('tabLeadsBtn').classList.toggle('active', name === 'leads');
+    if (name === 'leads') loadMyLeads();
+  }
+
+  document.getElementById('salesperson').addEventListener('change', function() {
+    if (!document.getElementById('leadsTab').classList.contains('hidden')) loadMyLeads();
+  });
+
+  // ---------- delivery form (unchanged logic, input replaces select) ----------
   function showMessage(text, kind) {
     var el = document.getElementById('message');
     el.textContent = text;
@@ -265,7 +442,7 @@
 
   function readCard() {
     return {
-      customer: document.getElementById('entryCustomer').value,
+      customer: document.getElementById('entryCustomer').value.trim(),
       still6: Number(document.getElementById('entryStill6').value) || 0,
       still20: Number(document.getElementById('entryStill20').value) || 0,
       sparkling6: Number(document.getElementById('entrySparkling6').value) || 0,
@@ -372,6 +549,10 @@
   document.getElementById('addBtn').addEventListener('click', function() {
     var line = readCard();
     if (!line.customer) { showMessage('Select a customer before adding.', 'error'); return; }
+    if (customerNames.indexOf(line.customer) === -1) {
+      showMessage('"' + line.customer + '" isn\'t a recognized customer - pick one from the dropdown suggestions.', 'error');
+      return;
+    }
     if (line.still6 + line.still20 + line.sparkling6 + line.sparkling20 === 0) {
       showMessage('Enter at least one quantity greater than zero.', 'error');
       return;
@@ -386,6 +567,14 @@
     setEditing(null);
   });
 
+  attachAutocomplete(
+    document.getElementById('entryCustomer'),
+    document.getElementById('entryCustomerPanel'),
+    function(q) { return filterItems(customerItems, q, 8); },
+    function(item) { document.getElementById('entryCustomer').value = item.value; }
+  );
+
+  // ---------- new customer modal ----------
   function showNewCustMessage(text, kind) {
     var el = document.getElementById('newCustMessage');
     el.textContent = text;
@@ -408,6 +597,22 @@
   document.getElementById('newCustomerBtn').addEventListener('click', openNewCustomerModal);
   document.getElementById('newCustomerCancel').addEventListener('click', closeNewCustomerModal);
   document.getElementById('newCustCancel2').addEventListener('click', closeNewCustomerModal);
+
+  attachAutocomplete(
+    document.getElementById('newCustName'),
+    document.getElementById('newCustNamePanel'),
+    function(q) { return q.trim() ? filterItems(allCustomerItems, q, 6) : []; },
+    function(item) {
+      document.getElementById('newCustName').value = item.value;
+      if (SELLABLE_STATUSES.indexOf(item.sub) !== -1) {
+        closeNewCustomerModal();
+        document.getElementById('entryCustomer').value = item.value;
+        showMessage('"' + item.value + '" is already on the list - selected them for you.', 'success');
+      } else {
+        showNewCustMessage('Already tracked as a lead (status: ' + item.sub + '). Manage it from the My Leads tab instead, or use a more specific name if this is a different business.', 'error');
+      }
+    }
+  );
 
   document.getElementById('newCustomerForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -436,14 +641,10 @@
         submitBtn.disabled = false;
         if (result && result.error) { showNewCustMessage(result.error, 'error'); return; }
         if (result && result.duplicate) {
-          showNewCustMessage('Already on the list as "' + result.existingName + '" - select them from the Customer dropdown instead.', 'error');
+          showNewCustMessage('Already on the list as "' + result.existingName + '" - select them from the Customer field instead.', 'error');
           return;
         }
-        if (customerNames.indexOf(result.name) === -1) {
-          customerNames.push(result.name);
-          customerNames.sort(function(a, b) { return a.localeCompare(b); });
-        }
-        populateSelect(document.getElementById('entryCustomer'), customerNames, 'Select customer...');
+        addKnownCustomer(result.name, payload.channel, 'Active - Pending');
         document.getElementById('entryCustomer').value = result.name;
         closeNewCustomerModal();
         showMessage('Added "' + result.name + '" as Active - Pending. Select their quantities and tap "Add to list".', 'success');
@@ -454,6 +655,19 @@
       });
   });
 
+  function addKnownCustomer(name, channel, status) {
+    if (SELLABLE_STATUSES.indexOf(status) !== -1 && customerNames.indexOf(name) === -1) {
+      customerNames.push(name);
+      customerNames.sort(function(a, b) { return a.localeCompare(b); });
+      customerItems.push({ label: name, value: name, sub: channel });
+      customerItems.sort(function(a, b) { return a.label.localeCompare(b.label); });
+    }
+    if (!allCustomerItems.some(function(i) { return i.value === name; })) {
+      allCustomerItems.push({ label: name, value: name, sub: status });
+    }
+  }
+
+  // ---------- recent activity ----------
   function renderRecent(recent) {
     var body = document.getElementById('recentBody');
     body.innerHTML = '';
@@ -506,17 +720,19 @@
       .catch(function(err) { showMessage('Failed to refresh: ' + err.message, 'error'); });
   });
 
+  // ---------- initial load ----------
   fetch(API_URL + '?api=formData&key=' + encodeURIComponent(API_KEY))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.error) throw new Error(data.error);
       customerNames = data.customers.map(function(c) { return c.name; });
+      customerItems = data.customers.map(function(c) { return { label: c.name, value: c.name, sub: c.channel }; });
+      allCustomerItems = (data.allCustomerNames || []).map(function(c) { return { label: c.name, value: c.name, sub: c.status }; });
       populateSelect(document.getElementById('salesperson'), data.salespeople, 'Select a salesperson...');
-      populateSelect(document.getElementById('entryCustomer'), customerNames, 'Select customer...');
       renderSummary();
       renderRecent(data.recent);
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('saleForm').style.display = 'block';
+      document.getElementById('app').style.display = 'block';
     })
     .catch(function(err) {
       document.getElementById('loading').textContent = 'Failed to load: ' + err.message;
@@ -552,6 +768,339 @@
       .catch(function(err) {
         btn.disabled = false;
         showMessage(err.message, 'error');
+      });
+  });
+
+  // ---------- My Leads ----------
+  function statusBadgeClass(status) {
+    return 'status-badge status-' + status.replace(/\s+/g, '-');
+  }
+
+  function loadMyLeads() {
+    var salesperson = document.getElementById('salesperson').value;
+    var list = document.getElementById('leadsList');
+    if (!salesperson) {
+      list.innerHTML = '<div class="p-6 text-sm text-slate-500 text-center italic">Select a salesperson above to see their targets.</div>';
+      return;
+    }
+    list.innerHTML = '<div class="p-6 text-sm text-slate-500 text-center">Loading...</div>';
+    fetch(API_URL + '?api=myLeads&salesperson=' + encodeURIComponent(salesperson) + '&key=' + encodeURIComponent(API_KEY))
+      .then(function(r) { return r.json(); })
+      .then(function(leads) {
+        if (leads && leads.error) { list.innerHTML = '<div class="p-6 text-sm text-red-600">' + leads.error + '</div>'; return; }
+        renderLeadsList(leads);
+      })
+      .catch(function(err) { list.innerHTML = '<div class="p-6 text-sm text-red-600">Failed to load: ' + err.message + '</div>'; });
+  }
+
+  function renderLeadsList(leads) {
+    var list = document.getElementById('leadsList');
+    list.innerHTML = '';
+    if (!leads.length) {
+      list.innerHTML = '<div class="p-6 text-sm text-slate-500 text-center italic">No open targets yet. Tap "+ Find new target" to add one.</div>';
+      return;
+    }
+    leads.forEach(function(lead) { list.appendChild(buildLeadCard(lead)); });
+  }
+
+  function buildLeadCard(lead) {
+    var wrap = document.createElement('div');
+    wrap.className = 'p-5 border-b border-slate-100 last:border-b-0';
+
+    var top = document.createElement('div');
+    top.className = 'flex items-start justify-between gap-3';
+    var nameBlock = document.createElement('div');
+    var nameEl = document.createElement('div');
+    nameEl.className = 'font-semibold text-slate-800';
+    nameEl.textContent = lead.name;
+    nameBlock.appendChild(nameEl);
+    var metaEl = document.createElement('div');
+    metaEl.className = 'text-xs text-slate-500 mt-0.5';
+    metaEl.textContent = [lead.businessType, lead.channel].filter(Boolean).join(' · ') || 'No details yet';
+    nameBlock.appendChild(metaEl);
+    top.appendChild(nameBlock);
+    var badge = document.createElement('span');
+    badge.className = statusBadgeClass(lead.status);
+    badge.textContent = lead.status;
+    top.appendChild(badge);
+    wrap.appendChild(top);
+
+    if (lead.lastUpdate) {
+      var lastP = document.createElement('p');
+      lastP.className = 'text-sm text-slate-600 mt-2';
+      lastP.textContent = lead.lastUpdate;
+      wrap.appendChild(lastP);
+    }
+
+    var actions = document.createElement('div');
+    actions.className = 'flex gap-4 mt-3';
+    var updateBtn = actionBtn('Add update', 'text-primary-600 hover:text-primary-700');
+    var historyBtn = actionBtn('History', 'text-slate-500 hover:text-slate-700');
+    actions.appendChild(updateBtn);
+    actions.appendChild(historyBtn);
+    wrap.appendChild(actions);
+
+    var updateForm = buildUpdateForm(lead, wrap);
+    wrap.appendChild(updateForm);
+    var historyPanel = document.createElement('div');
+    historyPanel.className = 'hidden mt-3 bg-slate-50 rounded-lg p-3 space-y-2';
+    wrap.appendChild(historyPanel);
+
+    updateBtn.addEventListener('click', function() {
+      updateForm.classList.toggle('hidden');
+    });
+    historyBtn.addEventListener('click', function() {
+      var willShow = historyPanel.classList.contains('hidden');
+      historyPanel.classList.toggle('hidden');
+      if (willShow && !historyPanel.dataset.loaded) {
+        historyPanel.dataset.loaded = '1';
+        historyPanel.innerHTML = '<div class="text-xs text-slate-500">Loading...</div>';
+        fetch(API_URL + '?api=leadHistory&customer=' + encodeURIComponent(lead.name) + '&key=' + encodeURIComponent(API_KEY))
+          .then(function(r) { return r.json(); })
+          .then(function(history) { renderHistory(historyPanel, history); })
+          .catch(function(err) { historyPanel.innerHTML = '<div class="text-xs text-red-600">' + err.message + '</div>'; });
+      }
+    });
+
+    return wrap;
+  }
+
+  function renderHistory(panel, history) {
+    panel.innerHTML = '';
+    if (!history || !history.length) {
+      panel.innerHTML = '<div class="text-xs text-slate-500 italic">No history yet.</div>';
+      return;
+    }
+    history.forEach(function(h) {
+      var row = document.createElement('div');
+      row.className = 'text-xs border-b border-slate-200 last:border-b-0 pb-2';
+      var head = document.createElement('div');
+      head.className = 'font-semibold text-slate-600';
+      head.textContent = h.date + ' · ' + h.salesperson + ' · ' + h.status;
+      row.appendChild(head);
+      var note = document.createElement('div');
+      note.className = 'text-slate-600 mt-0.5';
+      note.textContent = h.note;
+      row.appendChild(note);
+      panel.appendChild(row);
+    });
+  }
+
+  function buildUpdateForm(lead, cardEl) {
+    var form = document.createElement('form');
+    form.className = 'hidden mt-3 space-y-3 bg-slate-50 rounded-lg p-4';
+
+    var textarea = document.createElement('textarea');
+    textarea.className = 'shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md';
+    textarea.rows = 2;
+    textarea.placeholder = "What's new with this lead?";
+    textarea.required = true;
+    form.appendChild(textarea);
+
+    var statusRow = document.createElement('div');
+    statusRow.className = 'flex gap-3 items-center';
+    var statusSelect = document.createElement('select');
+    statusSelect.className = 'block flex-1 pl-3 pr-10 py-2 text-sm border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 rounded-lg shadow-sm';
+    [['', 'Keep status: ' + lead.status], ['Prospect', 'Prospect'], ['Open - In Discussion', 'Open - In Discussion'], ['Active - Pending', 'Active - Pending (delivered / closed)'], ['Inactive', 'Inactive']].forEach(function(pair) {
+      var opt = document.createElement('option');
+      opt.value = pair[0];
+      opt.textContent = pair[1];
+      statusSelect.appendChild(opt);
+    });
+    statusRow.appendChild(statusSelect);
+
+    var saveBtn = document.createElement('button');
+    saveBtn.type = 'submit';
+    saveBtn.textContent = 'Save update';
+    saveBtn.className = 'py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg';
+    statusRow.appendChild(saveBtn);
+    form.appendChild(statusRow);
+
+    var msg = document.createElement('div');
+    msg.className = 'hidden text-sm rounded-lg px-3 py-2';
+    form.appendChild(msg);
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var salesperson = document.getElementById('salesperson').value;
+      if (!salesperson) { msg.className = 'text-sm rounded-lg px-3 py-2 bg-red-50 text-red-700'; msg.textContent = 'Select a salesperson above first.'; return; }
+      saveBtn.disabled = true;
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'addLeadUpdate',
+          key: API_KEY,
+          payload: { customerName: lead.name, salesperson: salesperson, note: textarea.value.trim(), newStatus: statusSelect.value }
+        })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+          saveBtn.disabled = false;
+          if (result && result.error) { msg.className = 'text-sm rounded-lg px-3 py-2 bg-red-50 text-red-700'; msg.textContent = result.error; return; }
+          loadMyLeads();
+        })
+        .catch(function(err) {
+          saveBtn.disabled = false;
+          msg.className = 'text-sm rounded-lg px-3 py-2 bg-red-50 text-red-700';
+          msg.textContent = err.message;
+        });
+    });
+
+    return form;
+  }
+
+  // ---------- Browse companies ----------
+  document.getElementById('findTargetBtn').addEventListener('click', openBrowseModal);
+  document.getElementById('browseCancel').addEventListener('click', closeBrowseModal);
+
+  function openBrowseModal() {
+    document.getElementById('browseModal').classList.remove('hidden');
+    document.getElementById('browseSearch').value = '';
+    document.getElementById('browseSearch').focus();
+    if (karibuCompanies === null) {
+      document.getElementById('browseResults').innerHTML = '<div class="p-6 text-sm text-slate-500 text-center">Loading companies...</div>';
+      fetch(API_URL + '?api=karibuCompanies&key=' + encodeURIComponent(API_KEY))
+        .then(function(r) { return r.json(); })
+        .then(function(list) {
+          karibuCompanies = (list && list.error) ? [] : list;
+          renderBrowseResults('');
+        })
+        .catch(function() { karibuCompanies = []; renderBrowseResults(''); });
+    } else {
+      renderBrowseResults('');
+    }
+  }
+
+  function closeBrowseModal() {
+    document.getElementById('browseModal').classList.add('hidden');
+  }
+
+  document.getElementById('browseSearch').addEventListener('input', function() {
+    renderBrowseResults(this.value);
+  });
+
+  function renderBrowseResults(query) {
+    var results = document.getElementById('browseResults');
+    results.innerHTML = '';
+    if (!karibuCompanies) return;
+    query = query.trim().toLowerCase();
+    var matches = query
+      ? karibuCompanies.filter(function(c) { return c.name.toLowerCase().indexOf(query) !== -1; }).slice(0, 40)
+      : karibuCompanies.slice(0, 40);
+    if (!matches.length) {
+      results.innerHTML = '<div class="p-6 text-sm text-slate-500 text-center italic">No matches - try "Add a new company" below.</div>';
+      return;
+    }
+    matches.forEach(function(c) {
+      var row = document.createElement('div');
+      row.className = 'px-4 py-3 flex items-center justify-between gap-3 hover:bg-slate-50';
+      var left = document.createElement('div');
+      var nameEl = document.createElement('div');
+      nameEl.className = 'text-sm font-medium text-slate-800';
+      nameEl.textContent = c.name;
+      left.appendChild(nameEl);
+      if (c.industry) {
+        var indEl = document.createElement('div');
+        indEl.className = 'text-xs text-slate-500';
+        indEl.textContent = c.industry;
+        left.appendChild(indEl);
+      }
+      row.appendChild(left);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'text-xs font-semibold text-primary-600 hover:text-primary-700 whitespace-nowrap';
+      btn.textContent = '+ Target';
+      btn.addEventListener('click', function() {
+        closeBrowseModal();
+        openAddLeadModal(c.name, c.industry);
+      });
+      row.appendChild(btn);
+      results.appendChild(row);
+    });
+  }
+
+  document.getElementById('browseAddNew').addEventListener('click', function() {
+    closeBrowseModal();
+    openAddLeadModal('', '');
+  });
+
+  // ---------- Add lead modal ----------
+  attachAutocomplete(
+    document.getElementById('leadName'),
+    document.getElementById('leadNamePanel'),
+    function(q) { return q.trim() ? filterItems(allCustomerItems, q, 6) : []; },
+    function(item) {
+      document.getElementById('leadName').value = item.value;
+      showAddLeadMessage('Already tracked (status: ' + item.sub + '). Find it in My Targets, or use a more specific name if this is a different business.', 'error');
+    }
+  );
+
+  function showAddLeadMessage(text, kind) {
+    var el = document.getElementById('addLeadMessage');
+    el.textContent = text;
+    el.className = 'rounded-lg px-4 py-3 text-sm font-medium ' +
+      (kind === 'success' ? 'bg-emerald-50 text-emerald-700' :
+       kind === 'error' ? 'bg-red-50 text-red-700' : 'hidden');
+  }
+
+  function openAddLeadModal(name, businessType) {
+    document.getElementById('addLeadForm').reset();
+    document.getElementById('leadName').value = name || '';
+    document.getElementById('leadBusinessType').value = businessType || '';
+    showAddLeadMessage('', '');
+    document.getElementById('addLeadModal').classList.remove('hidden');
+    (name ? document.getElementById('leadNote') : document.getElementById('leadName')).focus();
+  }
+
+  function closeAddLeadModal() {
+    document.getElementById('addLeadModal').classList.add('hidden');
+  }
+
+  document.getElementById('addLeadCancel').addEventListener('click', closeAddLeadModal);
+  document.getElementById('addLeadCancel2').addEventListener('click', closeAddLeadModal);
+
+  document.getElementById('addLeadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var salesperson = document.getElementById('salesperson').value;
+    if (!salesperson) { showAddLeadMessage('Select a salesperson above first.', 'error'); return; }
+    var name = document.getElementById('leadName').value.trim();
+    if (!name) { showAddLeadMessage('Company name is required.', 'error'); return; }
+
+    var submitBtn = document.getElementById('addLeadSubmit');
+    submitBtn.disabled = true;
+    showAddLeadMessage('', '');
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'addLead',
+        key: API_KEY,
+        payload: {
+          name: name,
+          businessType: document.getElementById('leadBusinessType').value.trim(),
+          channel: document.getElementById('leadChannel').value,
+          salesperson: salesperson,
+          note: document.getElementById('leadNote').value.trim()
+        }
+      })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        submitBtn.disabled = false;
+        if (result && result.error) { showAddLeadMessage(result.error, 'error'); return; }
+        if (result && result.duplicate) {
+          showAddLeadMessage('Already on the list as "' + result.existingName + '" (status: ' + result.existingStatus + ').', 'error');
+          return;
+        }
+        allCustomerItems.push({ label: result.name, value: result.name, sub: 'Prospect' });
+        closeAddLeadModal();
+        loadMyLeads();
+      })
+      .catch(function(err) {
+        submitBtn.disabled = false;
+        showAddLeadMessage(err.message, 'error');
       });
   });
 </script>
