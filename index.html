@@ -337,15 +337,6 @@
     setEditing(null);
   });
 
-  function formatWhen(iso) {
-    if (!iso) return '';
-    var d = new Date(iso);
-    var today = new Date();
-    var isToday = d.toDateString() === today.toDateString();
-    var time = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-    return isToday ? time : d.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + time;
-  }
-
   function renderRecent(recent) {
     var body = document.getElementById('recentBody');
     body.innerHTML = '';
@@ -364,7 +355,7 @@
       tr.className = 'hover:bg-slate-50 transition-colors';
       var whenTd = document.createElement('td');
       whenTd.className = 'px-4 py-3 whitespace-nowrap text-slate-500';
-      whenTd.textContent = formatWhen(r.timestamp);
+      whenTd.textContent = r.date;
       tr.appendChild(whenTd);
       var repTd = document.createElement('td');
       repTd.className = 'px-4 py-3 whitespace-nowrap text-slate-700 font-medium';
