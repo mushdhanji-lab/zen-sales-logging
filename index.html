@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ZEN Daily Sale Entry</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+      background: #f7f7f8;
+      color: #1a1a1a;
+    }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 28px 0 10px; }
+    .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+    label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+    select, input[type=number] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .sku-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .sku-grid label { margin: 0 0 4px; font-weight: 500; font-size: 12px; color: #444; }
+
+    .entry-card {
+      background: #fff;
+      border: 1px solid #e2e2e4;
+      border-radius: 10px;
+      padding: 14px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .entry-card.editing {
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 3px rgba(26,115,232,.12);
+    }
+    .editing-flag {
+      display: none;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a73e8;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      margin-bottom: 6px;
+    }
+    .entry-card.editing .editing-flag { display: block; }
+
+    .entry-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .add-btn {
+      flex: 1;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      background: #1a73e8;
+      border: none;
+      border-radius: 8px;
+    }
+    .cancel-btn {
+      display: none;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #444;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .entry-card.editing .cancel-btn { display: block; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid #eee; white-space: nowrap; }
+    th { color: #666; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+    .table-scroll { overflow-x: auto; background: #fff; border: 1px solid #e2e2e4; border-radius: 10px; padding: 4px 10px; }
+    tfoot td { font-weight: 700; border-bottom: none; border-top: 2px solid #ddd; }
+    .empty-note { color: #888; font-size: 13px; padding: 10px 2px; }
+    tr.editing-row { background: #eaf1fd; }
+    .row-btn {
+      background: none;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 3px 6px;
+    }
+    .row-btn.edit { color: #1a73e8; }
+    .row-btn.remove { color: #c5221f; }
+
+    button.submit {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      background: #1a73e8;
+      border: none;
+      border-radius: 8px;
+    }
+    button.submit:disabled { background: #9bb8e8; }
+    #message {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+    #message.success { display: block; background: #e6f4ea; color: #1e7e34; }
+    #message.error { display: block; background: #fce8e6; color: #c5221f; }
+    #loading { text-align: center; color: #666; padding: 40px 0; }
+
+    .recent-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .refresh-btn {
+      background: none; border: none; color: #1a73e8; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>ZEN Daily Sale Entry</h1>
+  <div class="subtitle">Delivery date is recorded automatically as today. Fill in one customer at a time and tap Add - review the list below, then submit once.</div>
+
+  <div id="loading">Loading...</div>
+
+  <form id="saleForm" style="display:none">
+    <label for="salesperson">Salesperson</label>
+    <select id="salesperson" required></select>
+
+    <h2>Add a customer</h2>
+    <div class="entry-card" id="entryCard">
+      <div class="editing-flag">Editing entry #<span id="editingNumber"></span> - Update or Cancel below</div>
+
+      <label for="entryCustomer">Customer</label>
+      <select id="entryCustomer"></select>
+
+      <div class="sku-grid">
+        <div>
+          <label>Still - 6pc Box</label>
+          <input type="number" id="entryStill6" min="0" step="1" value="0">
+        </div>
+        <div>
+          <label>Still - 20pc Crate</label>
+          <input type="number" id="entryStill20" min="0" step="1" value="0">
+        </div>
+        <div>
+          <label>Sparkling - 6pc Box</label>
+          <input type="number" id="entrySparkling6" min="0" step="1" value="0">
+        </div>
+        <div>
+          <label>Sparkling - 20pc Crate</label>
+          <input type="number" id="entrySparkling20" min="0" step="1" value="0">
+        </div>
+      </div>
+
+      <div class="entry-actions">
+        <button type="button" class="add-btn" id="addBtn">Add to list</button>
+        <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+      </div>
+    </div>
+
+    <h2>Review before submitting</h2>
+    <div class="table-scroll">
+      <table id="summaryTable">
+        <thead>
+          <tr><th>Customer</th><th>Still 6</th><th>Still 20</th><th>Spk 6</th><th>Spk 20</th><th>Total</th><th></th></tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+        <tfoot><tr><td>Grand total</td><td></td><td></td><td></td><td></td><td id="grandTotal">0</td><td></td></tr></tfoot>
+      </table>
+    </div>
+
+    <button type="submit" class="submit" id="submitBtn">Submit All</button>
+    <div id="message"></div>
+  </form>
+
+  <h2 class="recent-header">
+    <span>Last 2 days (all reps) - check before you submit</span>
+    <button type="button" class="refresh-btn" id="refreshRecent">Refresh</button>
+  </h2>
+  <div class="table-scroll">
+    <table id="recentTable">
+      <thead>
+        <tr><th>When</th><th>Rep</th><th>Customer</th><th>Still 6</th><th>Still 20</th><th>Spk 6</th><th>Spk 20</th><th>Total</th></tr>
+      </thead>
+      <tbody id="recentBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // Apps Script web app deployment with "Anyone, even anonymous" access -
+    // this is what keeps the page from ever hitting Google's account-chooser
+    // interstitial (the thing that was crashing on devices with multiple
+    // signed-in Google accounts). Never point this at a sign-in-required
+    // deployment.
+    var API_URL = 'https://script.google.com/macros/s/AKfycbzjpZpVpf3TGzuXRT-U4cwaba7avlkZcRaVXN-LaOeqP5iFZT8d3WrCD9MsYW5wk2UfSg/exec';
+    var API_KEY = '644c03e92928ea6d4f2a35b4b4a869e075a74719dd95cc70';
+
+    var customerNames = [];
+    var lines = [];
+    var editingIndex = null;
+
+    function showMessage(text, kind) {
+      var el = document.getElementById('message');
+      el.textContent = text;
+      el.className = kind || '';
+    }
+
+    function populateSelect(select, values, placeholder) {
+      select.innerHTML = '';
+      var ph = document.createElement('option');
+      ph.value = '';
+      ph.textContent = placeholder;
+      select.appendChild(ph);
+      values.forEach(function(v) {
+        var opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
+      });
+    }
+
+    function readCard() {
+      return {
+        customer: document.getElementById('entryCustomer').value,
+        still6: Number(document.getElementById('entryStill6').value) || 0,
+        still20: Number(document.getElementById('entryStill20').value) || 0,
+        sparkling6: Number(document.getElementById('entrySparkling6').value) || 0,
+        sparkling20: Number(document.getElementById('entrySparkling20').value) || 0
+      };
+    }
+
+    function cardIsBlank() {
+      var c = readCard();
+      return !c.customer && c.still6 + c.still20 + c.sparkling6 + c.sparkling20 === 0;
+    }
+
+    function writeCard(line) {
+      document.getElementById('entryCustomer').value = line.customer;
+      document.getElementById('entryStill6').value = line.still6;
+      document.getElementById('entryStill20').value = line.still20;
+      document.getElementById('entrySparkling6').value = line.sparkling6;
+      document.getElementById('entrySparkling20').value = line.sparkling20;
+    }
+
+    function clearCard() {
+      writeCard({ customer: '', still6: 0, still20: 0, sparkling6: 0, sparkling20: 0 });
+    }
+
+    function setEditing(index) {
+      editingIndex = index;
+      var card = document.getElementById('entryCard');
+      if (index === null) {
+        card.classList.remove('editing');
+        document.getElementById('addBtn').textContent = 'Add to list';
+        clearCard();
+      } else {
+        card.classList.add('editing');
+        document.getElementById('editingNumber').textContent = index + 1;
+        document.getElementById('addBtn').textContent = 'Update entry';
+        writeCard(lines[index]);
+      }
+      renderSummary();
+    }
+
+    function renderSummary() {
+      var body = document.getElementById('summaryBody');
+      body.innerHTML = '';
+      var grand = 0;
+      if (!lines.length) {
+        var tr = document.createElement('tr');
+        var td = document.createElement('td');
+        td.colSpan = 7;
+        td.className = 'empty-note';
+        td.textContent = 'Nothing added yet - fill in the card above and tap "Add to list".';
+        tr.appendChild(td);
+        body.appendChild(tr);
+      } else {
+        lines.forEach(function(l, i) {
+          var total = l.still6 + l.still20 + l.sparkling6 + l.sparkling20;
+          grand += total;
+          var tr = document.createElement('tr');
+          if (i === editingIndex) tr.className = 'editing-row';
+          [l.customer, l.still6, l.still20, l.sparkling6, l.sparkling20, total].forEach(function(v) {
+            var td = document.createElement('td');
+            td.textContent = v;
+            tr.appendChild(td);
+          });
+          var actionsTd = document.createElement('td');
+          var editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'row-btn edit';
+          editBtn.textContent = 'Edit';
+          editBtn.addEventListener('click', function() { setEditing(i); });
+          var removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'row-btn remove';
+          removeBtn.textContent = 'Remove';
+          removeBtn.addEventListener('click', function() {
+            lines.splice(i, 1);
+            if (editingIndex === i) { editingIndex = null; clearCard(); document.getElementById('entryCard').classList.remove('editing'); document.getElementById('addBtn').textContent = 'Add to list'; }
+            else if (editingIndex !== null && editingIndex > i) { editingIndex--; }
+            renderSummary();
+          });
+          actionsTd.appendChild(editBtn);
+          actionsTd.appendChild(removeBtn);
+          tr.appendChild(actionsTd);
+          body.appendChild(tr);
+        });
+      }
+      document.getElementById('grandTotal').textContent = grand;
+      document.getElementById('submitBtn').disabled = lines.length === 0;
+    }
+
+    document.getElementById('addBtn').addEventListener('click', function() {
+      var line = readCard();
+      if (!line.customer) {
+        showMessage('Select a customer before adding.', 'error');
+        return;
+      }
+      if (line.still6 + line.still20 + line.sparkling6 + line.sparkling20 === 0) {
+        showMessage('Enter at least one quantity greater than zero.', 'error');
+        return;
+      }
+      showMessage('', '');
+      if (editingIndex !== null) {
+        lines[editingIndex] = line;
+      } else {
+        lines.push(line);
+      }
+      setEditing(null);
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', function() {
+      showMessage('', '');
+      setEditing(null);
+    });
+
+    function formatWhen(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      var today = new Date();
+      var isToday = d.toDateString() === today.toDateString();
+      var time = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+      return isToday ? time : d.toLocaleDateString([], {month: 'short', day: 'numeric'}) + ' ' + time;
+    }
+
+    function renderRecent(recent) {
+      var body = document.getElementById('recentBody');
+      body.innerHTML = '';
+      if (!recent || !recent.length) {
+        var tr = document.createElement('tr');
+        var td = document.createElement('td');
+        td.colSpan = 8;
+        td.className = 'empty-note';
+        td.textContent = 'No submissions in the last 2 days yet.';
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+      }
+      recent.forEach(function(r) {
+        var tr = document.createElement('tr');
+        [formatWhen(r.timestamp), r.salesperson, r.customer, r.still6, r.still20, r.sparkling6, r.sparkling20, r.total].forEach(function(v) {
+          var td = document.createElement('td');
+          td.textContent = v;
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    document.getElementById('refreshRecent').addEventListener('click', function() {
+      fetch(API_URL + '?api=recentActivity&key=' + encodeURIComponent(API_KEY))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && data.error) { showMessage(data.error, 'error'); return; }
+          renderRecent(data);
+        })
+        .catch(function(err) { showMessage('Failed to refresh: ' + err.message, 'error'); });
+    });
+
+    fetch(API_URL + '?api=formData&key=' + encodeURIComponent(API_KEY))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.error) throw new Error(data.error);
+        customerNames = data.customers.map(function(c) { return c.name; });
+        populateSelect(document.getElementById('salesperson'), data.salespeople, 'Select...');
+        populateSelect(document.getElementById('entryCustomer'), customerNames, 'Select customer...');
+        renderSummary();
+        renderRecent(data.recent);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('saleForm').style.display = 'block';
+      })
+      .catch(function(err) {
+        document.getElementById('loading').textContent = 'Failed to load: ' + err.message;
+      });
+
+    document.getElementById('saleForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('submitBtn');
+      var salesperson = document.getElementById('salesperson').value;
+      if (!salesperson) {
+        showMessage('Select a salesperson.', 'error');
+        return;
+      }
+      if (!cardIsBlank()) {
+        showMessage('You have an unfinished entry in the card above - tap "Add to list" (or clear it) before submitting.', 'error');
+        return;
+      }
+      if (!lines.length) {
+        showMessage('Add at least one customer to the list before submitting.', 'error');
+        return;
+      }
+      btn.disabled = true;
+      showMessage('', '');
+
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'submitBatch', key: API_KEY, payload: { salesperson: salesperson, lines: lines } })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+          btn.disabled = false;
+          if (result && result.error) { showMessage(result.error, 'error'); return; }
+          showMessage('Saved ' + result.count + ' customer(s), ' + result.grandTotal + ' units total.', 'success');
+          lines = [];
+          setEditing(null);
+          renderRecent(result.recent);
+        })
+        .catch(function(err) {
+          btn.disabled = false;
+          showMessage(err.message, 'error');
+        });
+    });
+  </script>
+</body>
+</html>
