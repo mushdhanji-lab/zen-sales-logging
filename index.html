@@ -65,7 +65,10 @@
           </div>
           <div class="p-6 space-y-6">
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2" for="entryCustomer">Customer</label>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-slate-700" for="entryCustomer">Customer</label>
+                <button type="button" id="newCustomerBtn" class="text-xs font-semibold text-primary-600 hover:text-primary-700">+ New customer</button>
+              </div>
               <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="entryCustomer">
                 <option value="">Select customer...</option>
               </select>
@@ -178,6 +181,52 @@
     </div>
   </section>
 </main>
+
+<div id="newCustomerModal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+    <form id="newCustomerForm">
+      <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-800">New customer</h2>
+        <button type="button" id="newCustomerCancel" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-xs text-slate-500">
+          Creates the customer as <b>Active - Pending</b> so you can log today's delivery to them right away.
+          An admin will review and confirm the account.
+        </p>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustName">Customer name</label>
+          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustName" type="text" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustChannel">Channel</label>
+          <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="newCustChannel" required>
+            <option value="">Select...</option>
+            <option value="HORECA">HORECA</option>
+            <option value="Supermarket">Supermarket</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustContact">Contact person</label>
+          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustContact" type="text" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustPhone">Contact phone</label>
+          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustPhone" type="tel" required>
+        </div>
+        <div id="newCustMessage" class="hidden rounded-lg px-4 py-3 text-sm font-medium"></div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-200 flex gap-3">
+        <button type="submit" id="newCustSubmit" class="flex-1 flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none transition-colors">
+          Create customer
+        </button>
+        <button type="button" id="newCustCancel2" class="py-2.5 px-4 border border-slate-300 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
   // Apps Script web app deployment with "Anyone, even anonymous" access -
@@ -335,6 +384,74 @@
   document.getElementById('cancelBtn').addEventListener('click', function() {
     showMessage('', '');
     setEditing(null);
+  });
+
+  function showNewCustMessage(text, kind) {
+    var el = document.getElementById('newCustMessage');
+    el.textContent = text;
+    el.className = 'rounded-lg px-4 py-3 text-sm font-medium ' +
+      (kind === 'success' ? 'bg-emerald-50 text-emerald-700' :
+       kind === 'error' ? 'bg-red-50 text-red-700' : 'hidden');
+  }
+
+  function openNewCustomerModal() {
+    document.getElementById('newCustomerForm').reset();
+    showNewCustMessage('', '');
+    document.getElementById('newCustomerModal').classList.remove('hidden');
+    document.getElementById('newCustName').focus();
+  }
+
+  function closeNewCustomerModal() {
+    document.getElementById('newCustomerModal').classList.add('hidden');
+  }
+
+  document.getElementById('newCustomerBtn').addEventListener('click', openNewCustomerModal);
+  document.getElementById('newCustomerCancel').addEventListener('click', closeNewCustomerModal);
+  document.getElementById('newCustCancel2').addEventListener('click', closeNewCustomerModal);
+
+  document.getElementById('newCustomerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var submitBtn = document.getElementById('newCustSubmit');
+    var payload = {
+      name: document.getElementById('newCustName').value.trim(),
+      channel: document.getElementById('newCustChannel').value,
+      contactPerson: document.getElementById('newCustContact').value.trim(),
+      contactPhone: document.getElementById('newCustPhone').value.trim(),
+      salesperson: document.getElementById('salesperson').value
+    };
+    if (!payload.name || !payload.channel || !payload.contactPerson || !payload.contactPhone) {
+      showNewCustMessage('All fields are required.', 'error');
+      return;
+    }
+    submitBtn.disabled = true;
+    showNewCustMessage('', '');
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'createCustomer', key: API_KEY, payload: payload })
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        submitBtn.disabled = false;
+        if (result && result.error) { showNewCustMessage(result.error, 'error'); return; }
+        if (result && result.duplicate) {
+          showNewCustMessage('Already on the list as "' + result.existingName + '" - select them from the Customer dropdown instead.', 'error');
+          return;
+        }
+        if (customerNames.indexOf(result.name) === -1) {
+          customerNames.push(result.name);
+          customerNames.sort(function(a, b) { return a.localeCompare(b); });
+        }
+        populateSelect(document.getElementById('entryCustomer'), customerNames, 'Select customer...');
+        document.getElementById('entryCustomer').value = result.name;
+        closeNewCustomerModal();
+        showMessage('Added "' + result.name + '" as Active - Pending. Select their quantities and tap "Add to list".', 'success');
+      })
+      .catch(function(err) {
+        submitBtn.disabled = false;
+        showNewCustMessage(err.message, 'error');
+      });
   });
 
   function renderRecent(recent) {
