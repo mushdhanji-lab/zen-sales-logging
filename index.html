@@ -40,6 +40,8 @@
   .status-Open---In-Discussion { background: #fef9c3; color: #854d0e; }
   .status-Active---Pending { background: #dbeafe; color: #1d4ed8; }
   .status-Inactive { background: #fee2e2; color: #b91c1c; }
+  #recentFilterAll, #recentFilterMine { color: #64748b; }
+  #recentFilterAll.active, #recentFilterMine.active { background: #fff; color: #1d4ed8; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
 </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen py-8">
@@ -59,6 +61,7 @@
     <div class="flex items-center gap-2">
       <button type="button" class="tab-btn active" id="tabDeliveryBtn">Log Delivery</button>
       <button type="button" class="tab-btn" id="tabLeadsBtn">My Leads</button>
+      <button type="button" class="tab-btn" id="tabReportsBtn">Reports</button>
     </div>
 
     <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
@@ -170,12 +173,18 @@
       </form>
 
       <section class="pt-8 border-t border-slate-200 space-y-4 mt-8">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold text-slate-800">Last 2 days (all reps) - check before you submit</h2>
-          <button class="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center" type="button" id="refreshRecent">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
-            Refresh
-          </button>
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h2 class="text-lg font-bold text-slate-800" id="recentHeading">Last 2 days (all reps) - check before you submit</h2>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center bg-slate-100 rounded-lg p-0.5 text-xs font-semibold">
+              <button type="button" class="px-3 py-1.5 rounded-md" id="recentFilterAll">All reps</button>
+              <button type="button" class="px-3 py-1.5 rounded-md" id="recentFilterMine">Just me</button>
+            </div>
+            <button class="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center" type="button" id="refreshRecent">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              Refresh
+            </button>
+          </div>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto table-container">
@@ -209,6 +218,68 @@
           <button type="button" id="findTargetBtn" class="text-xs font-semibold text-primary-600 hover:text-primary-700 whitespace-nowrap">+ Find new target</button>
         </div>
         <div id="leadsList"></div>
+      </section>
+    </div>
+
+    <div id="reportsTab" class="hidden space-y-6">
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200 bg-slate-50">
+          <h2 class="text-lg font-semibold text-slate-800">By Salesperson</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Salesperson</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Units</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Deliveries</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-100" id="reportBySalesperson"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200 bg-slate-50">
+          <h2 class="text-lg font-semibold text-slate-800">By City</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">City</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Units</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Deliveries</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-100" id="reportByCity"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200 bg-slate-50">
+          <h2 class="text-lg font-semibold text-slate-800">By Month</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Month</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Units</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Deliveries</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-100" id="reportByMonth"></tbody>
+          </table>
+        </div>
       </section>
     </div>
   </div>
@@ -330,10 +401,15 @@
   var API_KEY = '644c03e92928ea6d4f2a35b4b4a869e075a74719dd95cc70';
   var SELLABLE_STATUSES = ['Active - Won', 'Active - Pending'];
 
-  var customerNames = [];       // sellable names only - what the delivery-entry field must match
-  var customerItems = [];       // {label, value, sub} for the delivery-entry autocomplete
+  var customersFull = [];       // sellable customers as returned by the server - {name, channel, city}
+  var customerNames = [];       // sellable names only, filtered to the selected salesperson's city
+  var customerItems = [];       // {label, value, sub} for the delivery-entry autocomplete, same filter
   var allCustomerItems = [];    // every customer/lead regardless of status - for dedupe-as-you-type
+  var salespersonCity = {};     // {name: city} - drives the customer-list filter
+  var customerStats = {};       // {salesperson: {customerName: {count, lastDate}}} - ranks autocomplete on focus
   var karibuCompanies = null;   // loaded lazily when Browse is first opened
+  var recentRaw = [];           // last fetched "recent activity" rows, before the All/Mine filter
+  var recentShowMineOnly = false;
   var lines = [];
   var editingIndex = null;
 
@@ -404,18 +480,36 @@
   // ---------- tabs ----------
   document.getElementById('tabDeliveryBtn').addEventListener('click', function() { showTab('delivery'); });
   document.getElementById('tabLeadsBtn').addEventListener('click', function() { showTab('leads'); });
+  document.getElementById('tabReportsBtn').addEventListener('click', function() { showTab('reports'); });
 
   function showTab(name) {
     document.getElementById('deliveryTab').classList.toggle('hidden', name !== 'delivery');
     document.getElementById('leadsTab').classList.toggle('hidden', name !== 'leads');
+    document.getElementById('reportsTab').classList.toggle('hidden', name !== 'reports');
     document.getElementById('tabDeliveryBtn').classList.toggle('active', name === 'delivery');
     document.getElementById('tabLeadsBtn').classList.toggle('active', name === 'leads');
+    document.getElementById('tabReportsBtn').classList.toggle('active', name === 'reports');
     if (name === 'leads') loadMyLeads();
+    if (name === 'reports') loadReports();
   }
 
   document.getElementById('salesperson').addEventListener('change', function() {
+    refilterCustomersForSalesperson();
+    updateRecentHeading();
+    renderRecent(recentRaw);
     if (!document.getElementById('leadsTab').classList.contains('hidden')) loadMyLeads();
   });
+
+  /** Narrows the delivery-entry customer list to the selected rep's city (customers with no city set are always included). */
+  function refilterCustomersForSalesperson() {
+    var salesperson = document.getElementById('salesperson').value;
+    var city = salespersonCity[salesperson] || '';
+    var filtered = !city
+      ? customersFull
+      : customersFull.filter(function(c) { return !c.city || c.city === city; });
+    customerNames = filtered.map(function(c) { return c.name; });
+    customerItems = filtered.map(function(c) { return { label: c.name, value: c.name, sub: c.channel }; });
+  }
 
   // ---------- delivery form (unchanged logic, input replaces select) ----------
   function showMessage(text, kind) {
@@ -567,10 +661,29 @@
     setEditing(null);
   });
 
+  /** Empty-query suggestions: this rep's own regulars (most orders, ties broken by most recent) instead of A-Z. */
+  function topCustomersForCurrentSalesperson(limit) {
+    var salesperson = document.getElementById('salesperson').value;
+    var stats = customerStats[salesperson] || {};
+    var ranked = customerItems.filter(function(item) { return stats[item.value]; });
+    ranked.sort(function(a, b) {
+      var sa = stats[a.value], sb = stats[b.value];
+      if (sb.count !== sa.count) return sb.count - sa.count;
+      return sb.lastDate < sa.lastDate ? -1 : sb.lastDate > sa.lastDate ? 1 : 0;
+    });
+    if (ranked.length < limit) {
+      customerItems.forEach(function(item) {
+        if (ranked.length >= limit) return;
+        if (!stats[item.value]) ranked.push(item);
+      });
+    }
+    return ranked.slice(0, limit);
+  }
+
   attachAutocomplete(
     document.getElementById('entryCustomer'),
     document.getElementById('entryCustomerPanel'),
-    function(q) { return filterItems(customerItems, q, 8); },
+    function(q) { return q.trim() ? filterItems(customerItems, q, 8) : topCustomersForCurrentSalesperson(8); },
     function(item) { document.getElementById('entryCustomer').value = item.value; }
   );
 
@@ -657,6 +770,9 @@
 
   function addKnownCustomer(name, channel, status) {
     if (SELLABLE_STATUSES.indexOf(status) !== -1 && customerNames.indexOf(name) === -1) {
+      var salesperson = document.getElementById('salesperson').value;
+      var city = salespersonCity[salesperson] || '';
+      customersFull.push({ name: name, channel: channel, city: city });
       customerNames.push(name);
       customerNames.sort(function(a, b) { return a.localeCompare(b); });
       customerItems.push({ label: name, value: name, sub: channel });
@@ -668,7 +784,35 @@
   }
 
   // ---------- recent activity ----------
-  function renderRecent(recent) {
+  function updateRecentHeading() {
+    var salesperson = document.getElementById('salesperson').value;
+    var mineActive = recentShowMineOnly && salesperson;
+    document.getElementById('recentHeading').textContent = mineActive
+      ? 'Last 2 days (' + salesperson + ') - check before you submit'
+      : 'Last 2 days (all reps) - check before you submit';
+    document.getElementById('recentFilterAll').classList.toggle('active', !mineActive);
+    document.getElementById('recentFilterMine').classList.toggle('active', !!mineActive);
+  }
+
+  document.getElementById('recentFilterAll').addEventListener('click', function() {
+    recentShowMineOnly = false;
+    updateRecentHeading();
+    renderRecent(recentRaw);
+  });
+  document.getElementById('recentFilterMine').addEventListener('click', function() {
+    if (!document.getElementById('salesperson').value) { showMessage('Select a salesperson first.', 'error'); return; }
+    recentShowMineOnly = true;
+    updateRecentHeading();
+    renderRecent(recentRaw);
+  });
+
+  function renderRecent(recentIn) {
+    recentRaw = recentIn || [];
+    var salesperson = document.getElementById('salesperson').value;
+    var recent = (recentShowMineOnly && salesperson)
+      ? recentRaw.filter(function(r) { return r.salesperson === salesperson; })
+      : recentRaw;
+
     var body = document.getElementById('recentBody');
     body.innerHTML = '';
     if (!recent || !recent.length) {
@@ -725,11 +869,14 @@
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.error) throw new Error(data.error);
-      customerNames = data.customers.map(function(c) { return c.name; });
-      customerItems = data.customers.map(function(c) { return { label: c.name, value: c.name, sub: c.channel }; });
+      customersFull = data.customers;
       allCustomerItems = (data.allCustomerNames || []).map(function(c) { return { label: c.name, value: c.name, sub: c.status }; });
-      populateSelect(document.getElementById('salesperson'), data.salespeople, 'Select a salesperson...');
+      customerStats = data.customerStats || {};
+      (data.salespeople || []).forEach(function(sp) { salespersonCity[sp.name] = sp.city; });
+      populateSelect(document.getElementById('salesperson'), data.salespeople.map(function(sp) { return sp.name; }), 'Select a salesperson...');
+      refilterCustomersForSalesperson();
       renderSummary();
+      updateRecentHeading();
       renderRecent(data.recent);
       document.getElementById('loading').style.display = 'none';
       document.getElementById('app').style.display = 'block';
@@ -764,6 +911,7 @@
         lines = [];
         setEditing(null);
         renderRecent(result.recent);
+        reportsLoaded = false;
       })
       .catch(function(err) {
         btn.disabled = false;
@@ -1103,6 +1251,62 @@
         showAddLeadMessage(err.message, 'error');
       });
   });
+
+  // ---------- Reports ----------
+  var reportsLoaded = false;
+
+  function loadReports() {
+    if (reportsLoaded) return;
+    ['reportBySalesperson', 'reportByCity', 'reportByMonth'].forEach(function(id) {
+      document.getElementById(id).innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-sm text-slate-500 text-center">Loading...</td></tr>';
+    });
+    fetch(API_URL + '?api=simpleReports&key=' + encodeURIComponent(API_KEY))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.error) throw new Error(data.error);
+        reportsLoaded = true;
+        renderReportTable('reportBySalesperson', data.bySalesperson, 'name');
+        renderReportTable('reportByCity', data.byCity, 'city');
+        renderReportTable('reportByMonth', data.byMonth, 'month');
+      })
+      .catch(function(err) {
+        ['reportBySalesperson', 'reportByCity', 'reportByMonth'].forEach(function(id) {
+          document.getElementById(id).innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-sm text-red-600 text-center">Failed to load: ' + err.message + '</td></tr>';
+        });
+      });
+  }
+
+  function renderReportTable(bodyId, rows, keyField) {
+    var body = document.getElementById(bodyId);
+    body.innerHTML = '';
+    if (!rows || !rows.length) {
+      body.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-sm text-slate-500 text-center italic">No data yet.</td></tr>';
+      return;
+    }
+    rows.forEach(function(r) {
+      var tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-50 transition-colors';
+      var keyTd = document.createElement('td');
+      keyTd.className = 'px-6 py-3 text-sm font-medium text-slate-800';
+      keyTd.textContent = r[keyField];
+      tr.appendChild(keyTd);
+      [r.still, r.sparkling].forEach(function(v) {
+        var td = document.createElement('td');
+        td.className = 'px-4 py-3 text-sm text-right text-slate-600';
+        td.textContent = v;
+        tr.appendChild(td);
+      });
+      var totalTd = document.createElement('td');
+      totalTd.className = 'px-4 py-3 text-sm text-right font-bold text-slate-800';
+      totalTd.textContent = r.total;
+      tr.appendChild(totalTd);
+      var countTd = document.createElement('td');
+      countTd.className = 'px-4 py-3 text-sm text-right text-slate-500';
+      countTd.textContent = r.count;
+      tr.appendChild(countTd);
+      body.appendChild(tr);
+    });
+  }
 </script>
 </body>
 </html>
