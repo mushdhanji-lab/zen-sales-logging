@@ -222,6 +222,14 @@
     </div>
 
     <div id="reportsTab" class="hidden space-y-6">
+      <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <label class="block text-sm font-semibold text-slate-700 mb-2" for="reportMonthFilter">Period</label>
+        <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="reportMonthFilter">
+          <option value="all">All time</option>
+          <option value="last3">Last 3 months</option>
+        </select>
+      </section>
+
       <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-5 border-b border-slate-200 bg-slate-50">
           <h2 class="text-lg font-semibold text-slate-800">By Salesperson</h2>
@@ -911,7 +919,7 @@
         lines = [];
         setEditing(null);
         renderRecent(result.recent);
-        reportsLoaded = false;
+        reportsLoadedForMonth = null;
       })
       .catch(function(err) {
         btn.disabled = false;
@@ -1253,18 +1261,38 @@
   });
 
   // ---------- Reports ----------
-  var reportsLoaded = false;
+  var reportsLoadedForMonth = null;
+  var reportMonthsPopulated = false;
+
+  function monthLabel(yyyyMM) {
+    var parts = yyyyMM.split('-');
+    var d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+    return d.toLocaleDateString([], { month: 'short', year: 'numeric' });
+  }
+
+  document.getElementById('reportMonthFilter').addEventListener('change', loadReports);
 
   function loadReports() {
-    if (reportsLoaded) return;
+    var month = document.getElementById('reportMonthFilter').value;
+    if (reportsLoadedForMonth === month) return;
     ['reportBySalesperson', 'reportByCity', 'reportByMonth'].forEach(function(id) {
       document.getElementById(id).innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-sm text-slate-500 text-center">Loading...</td></tr>';
     });
-    fetch(API_URL + '?api=simpleReports&key=' + encodeURIComponent(API_KEY))
+    fetch(API_URL + '?api=simpleReports&month=' + encodeURIComponent(month) + '&key=' + encodeURIComponent(API_KEY))
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data && data.error) throw new Error(data.error);
-        reportsLoaded = true;
+        reportsLoadedForMonth = month;
+        if (!reportMonthsPopulated) {
+          reportMonthsPopulated = true;
+          var select = document.getElementById('reportMonthFilter');
+          (data.availableMonths || []).slice().reverse().forEach(function(m) {
+            var opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = monthLabel(m);
+            select.appendChild(opt);
+          });
+        }
         renderReportTable('reportBySalesperson', data.bySalesperson, 'name');
         renderReportTable('reportByCity', data.byCity, 'city');
         renderReportTable('reportByMonth', data.byMonth, 'month');
@@ -1288,7 +1316,7 @@
       tr.className = 'hover:bg-slate-50 transition-colors';
       var keyTd = document.createElement('td');
       keyTd.className = 'px-6 py-3 text-sm font-medium text-slate-800';
-      keyTd.textContent = r[keyField];
+      keyTd.textContent = keyField === 'month' ? monthLabel(r[keyField]) : r[keyField];
       tr.appendChild(keyTd);
       [r.still, r.sparkling].forEach(function(v) {
         var td = document.createElement('td');
