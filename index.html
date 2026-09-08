@@ -97,7 +97,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-4 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
                     <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wider">Still Water</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                       <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStill6">6pc Box</label>
                         <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStill6" min="0" step="1" type="number" value="0">
@@ -106,11 +106,15 @@
                         <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStill20">20pc Crate</label>
                         <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStill20" min="0" step="1" type="number" value="0">
                       </div>
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1" for="entryStillBottle">Bottle</label>
+                        <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entryStillBottle" min="0" step="1" type="number" value="0">
+                      </div>
                     </div>
                   </div>
                   <div class="space-y-4 bg-emerald-50/50 p-4 rounded-lg border border-emerald-100">
                     <h3 class="text-sm font-semibold text-emerald-800 uppercase tracking-wider">Sparkling Water</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                       <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparkling6">6pc Box</label>
                         <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparkling6" min="0" step="1" type="number" value="0">
@@ -118,6 +122,10 @@
                       <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparkling20">20pc Crate</label>
                         <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparkling20" min="0" step="1" type="number" value="0">
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1" for="entrySparklingBottle">Bottle</label>
+                        <input class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 block w-full sm:text-sm border-slate-300 rounded-md" id="entrySparklingBottle" min="0" step="1" type="number" value="0">
                       </div>
                     </div>
                   </div>
@@ -146,8 +154,10 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 6</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 20</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still Btl</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 6</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 20</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk Btl</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
                         <th class="px-4 py-3"></th>
                       </tr>
@@ -155,7 +165,7 @@
                     <tbody class="bg-white divide-y divide-slate-100" id="summaryBody"></tbody>
                     <tfoot class="bg-slate-50 border-t border-slate-200">
                       <tr>
-                        <th class="px-6 py-4 text-right text-sm font-bold text-slate-900" colspan="5">Grand Total</th>
+                        <th class="px-6 py-4 text-right text-sm font-bold text-slate-900" colspan="7">Grand Total</th>
                         <td class="px-4 py-4 text-right text-sm font-bold text-slate-900" id="grandTotal">0</td>
                         <td></td>
                       </tr>
@@ -196,8 +206,10 @@
                   <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
                   <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 6</th>
                   <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still 20</th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still Btl</th>
                   <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 6</th>
                   <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk 20</th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Spk Btl</th>
                   <th class="px-4 py-3 text-right text-xs font-bold text-slate-700 uppercase tracking-wider bg-slate-100">Total</th>
                 </tr>
               </thead>
@@ -239,9 +251,9 @@
             <thead class="bg-slate-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Salesperson</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Units</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still (btl)</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling (btl)</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total (btl)</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Deliveries</th>
               </tr>
             </thead>
@@ -259,9 +271,9 @@
             <thead class="bg-slate-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">City</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Units</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still (btl)</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling (btl)</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total (btl)</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Deliveries</th>
               </tr>
             </thead>
@@ -279,9 +291,9 @@
             <thead class="bg-slate-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Month</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Units</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Still (btl)</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Sparkling (btl)</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total (btl)</th>
                 <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Deliveries</th>
               </tr>
             </thead>
@@ -592,26 +604,30 @@
       customer: document.getElementById('entryCustomer').value.trim(),
       still6: Number(document.getElementById('entryStill6').value) || 0,
       still20: Number(document.getElementById('entryStill20').value) || 0,
+      stillBottles: Number(document.getElementById('entryStillBottle').value) || 0,
       sparkling6: Number(document.getElementById('entrySparkling6').value) || 0,
-      sparkling20: Number(document.getElementById('entrySparkling20').value) || 0
+      sparkling20: Number(document.getElementById('entrySparkling20').value) || 0,
+      sparklingBottles: Number(document.getElementById('entrySparklingBottle').value) || 0
     };
   }
 
   function cardIsBlank() {
     var c = readCard();
-    return !c.customer && c.still6 + c.still20 + c.sparkling6 + c.sparkling20 === 0;
+    return !c.customer && c.still6 + c.still20 + c.stillBottles + c.sparkling6 + c.sparkling20 + c.sparklingBottles === 0;
   }
 
   function writeCard(line) {
     document.getElementById('entryCustomer').value = line.customer;
     document.getElementById('entryStill6').value = line.still6;
     document.getElementById('entryStill20').value = line.still20;
+    document.getElementById('entryStillBottle').value = line.stillBottles || 0;
     document.getElementById('entrySparkling6').value = line.sparkling6;
     document.getElementById('entrySparkling20').value = line.sparkling20;
+    document.getElementById('entrySparklingBottle').value = line.sparklingBottles || 0;
   }
 
   function clearCard() {
-    writeCard({ customer: '', still6: 0, still20: 0, sparkling6: 0, sparkling20: 0 });
+    writeCard({ customer: '', still6: 0, still20: 0, stillBottles: 0, sparkling6: 0, sparkling20: 0, sparklingBottles: 0 });
   }
 
   function setEditing(index) {
@@ -646,14 +662,14 @@
     if (!lines.length) {
       var tr = document.createElement('tr');
       var td = document.createElement('td');
-      td.colSpan = 7;
+      td.colSpan = 9;
       td.className = 'px-6 py-8 text-sm text-slate-500 text-center italic';
       td.textContent = 'Nothing added yet - fill in the card above and tap "Add to list".';
       tr.appendChild(td);
       body.appendChild(tr);
     } else {
       lines.forEach(function(l, i) {
-        var total = l.still6 + l.still20 + l.sparkling6 + l.sparkling20;
+        var total = l.still6 + l.still20 + (l.stillBottles || 0) + l.sparkling6 + l.sparkling20 + (l.sparklingBottles || 0);
         grand += total;
         var tr = document.createElement('tr');
         tr.className = i === editingIndex ? 'editing-row' : 'hover:bg-slate-50 transition-colors';
@@ -661,7 +677,7 @@
         custTd.className = 'px-6 py-3 text-sm text-slate-700';
         custTd.textContent = l.customer;
         tr.appendChild(custTd);
-        [l.still6, l.still20, l.sparkling6, l.sparkling20].forEach(function(v) {
+        [l.still6, l.still20, l.stillBottles || 0, l.sparkling6, l.sparkling20, l.sparklingBottles || 0].forEach(function(v) {
           var td = document.createElement('td');
           td.className = 'px-4 py-3 text-sm text-right text-slate-600';
           td.textContent = v;
@@ -700,7 +716,7 @@
       showMessage('"' + line.customer + '" isn\'t a recognized customer - pick one from the dropdown suggestions.', 'error');
       return;
     }
-    if (line.still6 + line.still20 + line.sparkling6 + line.sparkling20 === 0) {
+    if (line.still6 + line.still20 + line.stillBottles + line.sparkling6 + line.sparkling20 + line.sparklingBottles === 0) {
       showMessage('Enter at least one quantity greater than zero.', 'error');
       return;
     }
@@ -886,7 +902,7 @@
     if (!recent || !recent.length) {
       var tr = document.createElement('tr');
       var td = document.createElement('td');
-      td.colSpan = 8;
+      td.colSpan = 10;
       td.className = 'px-4 py-6 text-sm text-slate-500 text-center italic';
       td.textContent = 'No submissions in the last 2 days yet.';
       tr.appendChild(td);
@@ -908,7 +924,7 @@
       custTd.className = 'px-4 py-3 text-slate-700';
       custTd.textContent = r.customer;
       tr.appendChild(custTd);
-      [r.still6, r.still20, r.sparkling6, r.sparkling20].forEach(function(v) {
+      [r.still6, r.still20, r.stillBottles, r.sparkling6, r.sparkling20, r.sparklingBottles].forEach(function(v) {
         var td = document.createElement('td');
         td.className = 'px-4 py-3 whitespace-nowrap text-right text-slate-600';
         td.textContent = v;
