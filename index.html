@@ -294,13 +294,13 @@
 </main>
 
 <div id="newCustomerModal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
-    <form id="newCustomerForm">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col" style="max-height:90vh">
+    <form id="newCustomerForm" class="flex flex-col overflow-hidden">
       <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-800">New customer</h2>
         <button type="button" id="newCustomerCancel" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="p-6 space-y-4 overflow-y-auto">
         <p class="text-xs text-slate-500">
           Creates the customer as <b>Active - Pending</b> so you can log today's delivery to them right away.
           An admin will review and confirm the account.
@@ -310,6 +310,25 @@
           <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustName" type="text" autocomplete="off" required>
           <div id="newCustNamePanel" class="autocomplete-panel hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg"></div>
         </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustCity">City</label>
+            <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="newCustCity" required>
+              <option value="">Select...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustBusinessType">Business type</label>
+            <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="newCustBusinessType" required>
+              <option value="">Select...</option>
+            </select>
+          </div>
+        </div>
+        <div class="relative">
+          <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustLocation">Location</label>
+          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustLocation" type="text" autocomplete="off" placeholder="Neighbourhood / area" required>
+          <div id="newCustLocationPanel" class="autocomplete-panel hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg"></div>
+        </div>
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustChannel">Channel</label>
           <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="newCustChannel" required>
@@ -318,13 +337,28 @@
             <option value="Supermarket">Supermarket</option>
           </select>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustContact">Contact person</label>
-          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustContact" type="text" required>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustContact">Contact person</label>
+            <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustContact" type="text" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustPhone">Contact phone</label>
+            <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustPhone" type="tel" required>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustPhone">Contact phone</label>
-          <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustPhone" type="tel" required>
+        <div class="pt-2 border-t border-slate-100">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Optional</p>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustAddress">Physical address</label>
+              <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustAddress" type="text">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="newCustTin">TIN number</label>
+              <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="newCustTin" type="text">
+            </div>
+          </div>
         </div>
         <div id="newCustMessage" class="hidden rounded-lg px-4 py-3 text-sm font-medium"></div>
       </div>
@@ -415,6 +449,7 @@
   var allCustomerItems = [];    // every customer/lead regardless of status - for dedupe-as-you-type
   var salespersonCity = {};     // {name: city} - drives the customer-list filter
   var customerStats = {};       // {salesperson: {customerName: {count, lastDate}}} - ranks autocomplete on focus
+  var locationItems = [];       // {label, value} - suggestions for the New Customer Location field
   var karibuCompanies = null;   // loaded lazily when Browse is first opened
   var recentRaw = [];           // last fetched "recent activity" rows, before the All/Mine filter
   var recentShowMineOnly = false;
@@ -707,6 +742,8 @@
   function openNewCustomerModal() {
     document.getElementById('newCustomerForm').reset();
     showNewCustMessage('', '');
+    var defaultCity = salespersonCity[document.getElementById('salesperson').value] || '';
+    if (defaultCity) document.getElementById('newCustCity').value = defaultCity;
     document.getElementById('newCustomerModal').classList.remove('hidden');
     document.getElementById('newCustName').focus();
   }
@@ -735,18 +772,30 @@
     }
   );
 
+  attachAutocomplete(
+    document.getElementById('newCustLocation'),
+    document.getElementById('newCustLocationPanel'),
+    function(q) { return filterItems(locationItems, q, 8); },
+    function(item) { document.getElementById('newCustLocation').value = item.value; }
+  );
+
   document.getElementById('newCustomerForm').addEventListener('submit', function(e) {
     e.preventDefault();
     var submitBtn = document.getElementById('newCustSubmit');
     var payload = {
       name: document.getElementById('newCustName').value.trim(),
+      city: document.getElementById('newCustCity').value,
+      location: document.getElementById('newCustLocation').value.trim(),
+      businessType: document.getElementById('newCustBusinessType').value,
       channel: document.getElementById('newCustChannel').value,
       contactPerson: document.getElementById('newCustContact').value.trim(),
       contactPhone: document.getElementById('newCustPhone').value.trim(),
+      physicalAddress: document.getElementById('newCustAddress').value.trim(),
+      tin: document.getElementById('newCustTin').value.trim(),
       salesperson: document.getElementById('salesperson').value
     };
-    if (!payload.name || !payload.channel || !payload.contactPerson || !payload.contactPhone) {
-      showNewCustMessage('All fields are required.', 'error');
+    if (!payload.name || !payload.city || !payload.location || !payload.businessType || !payload.channel || !payload.contactPerson || !payload.contactPhone) {
+      showNewCustMessage('Fill in all required fields (everything except Physical address and TIN number).', 'error');
       return;
     }
     submitBtn.disabled = true;
@@ -880,8 +929,11 @@
       customersFull = data.customers;
       allCustomerItems = (data.allCustomerNames || []).map(function(c) { return { label: c.name, value: c.name, sub: c.status }; });
       customerStats = data.customerStats || {};
+      locationItems = (data.locationSuggestions || []).map(function(l) { return { label: l, value: l }; });
       (data.salespeople || []).forEach(function(sp) { salespersonCity[sp.name] = sp.city; });
       populateSelect(document.getElementById('salesperson'), data.salespeople.map(function(sp) { return sp.name; }), 'Select a salesperson...');
+      populateSelect(document.getElementById('newCustCity'), data.cityOptions || [], 'Select...');
+      populateSelect(document.getElementById('newCustBusinessType'), data.businessTypeOptions || [], 'Select...');
       refilterCustomersForSalesperson();
       renderSummary();
       updateRecentHeading();
