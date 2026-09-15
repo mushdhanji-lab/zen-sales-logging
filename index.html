@@ -1194,17 +1194,38 @@
     document.getElementById('browseSearch').value = '';
     document.getElementById('browseSearch').focus();
     if (karibuCompanies === null) {
-      document.getElementById('browseResults').innerHTML = '<div class="p-6 text-sm text-slate-500 text-center">Loading companies...</div>';
-      fetch(API_URL + '?api=karibuCompanies&key=' + encodeURIComponent(API_KEY))
-        .then(function(r) { return r.json(); })
-        .then(function(list) {
-          karibuCompanies = (list && list.error) ? [] : list;
-          renderBrowseResults('');
-        })
-        .catch(function() { karibuCompanies = []; renderBrowseResults(''); });
+      loadKaribuCompanies(true);
     } else {
       renderBrowseResults('');
     }
+  }
+
+  /**
+   * This deployment's /exec endpoint occasionally serves a non-JSON
+   * interstitial instead of the real response (seen intermittently across
+   * several endpoints, not specific to this one) - r.json() then throws.
+   * Retrying once almost always succeeds, so a single blip shouldn't
+   * permanently blank the list for the rest of the session. Only a second
+   * failure in a row is shown to the user, with a manual retry.
+   */
+  function loadKaribuCompanies(allowRetry) {
+    document.getElementById('browseResults').innerHTML = '<div class="p-6 text-sm text-slate-500 text-center">Loading companies...</div>';
+    fetch(API_URL + '?api=karibuCompanies&key=' + encodeURIComponent(API_KEY))
+      .then(function(r) { return r.json(); })
+      .then(function(list) {
+        if (list && list.error) throw new Error(list.error);
+        karibuCompanies = list;
+        renderBrowseResults(document.getElementById('browseSearch').value);
+      })
+      .catch(function() {
+        if (allowRetry) { loadKaribuCompanies(false); return; }
+        document.getElementById('browseResults').innerHTML =
+          '<div class="p-6 text-sm text-center">' +
+          '<p class="text-red-600 mb-2">Couldn\'t load the company list - the connection hiccuped.</p>' +
+          '<button type="button" id="browseRetryBtn" class="text-sm font-semibold text-primary-600 hover:text-primary-700">Try again</button>' +
+          '</div>';
+        document.getElementById('browseRetryBtn').addEventListener('click', function() { loadKaribuCompanies(true); });
+      });
   }
 
   function closeBrowseModal() {
@@ -1212,6 +1233,7 @@
   }
 
   document.getElementById('browseSearch').addEventListener('input', function() {
+    if (karibuCompanies === null) return; // still loading (or showing a retry) - nothing to filter yet
     renderBrowseResults(this.value);
   });
 
