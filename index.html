@@ -466,6 +466,27 @@
   var API_KEY = '644c03e92928ea6d4f2a35b4b4a869e075a74719dd95cc70';
   var SELLABLE_STATUSES = ['Active - Won', 'Active - Pending'];
 
+  /**
+   * This deployment's /exec endpoint intermittently serves a non-JSON
+   * interstitial instead of the real response - r.json() then throws
+   * "Unexpected token '<'". It almost always succeeds on the very next
+   * attempt, so a couple of quick retries avoid surfacing a transient blip
+   * as a hard failure. GET (read) calls only - never wrap a submit/create/
+   * update POST in this, since a request that looks like it failed on the
+   * client may have already gone through on the server, and retrying it
+   * could double up a submission.
+   */
+  function fetchJsonRetry(url, attemptsLeft) {
+    if (attemptsLeft === undefined) attemptsLeft = 3;
+    return fetch(url)
+      .then(function(r) { return r.json(); })
+      .catch(function(err) {
+        if (attemptsLeft <= 1) throw err;
+        return new Promise(function(resolve) { setTimeout(resolve, 700); })
+          .then(function() { return fetchJsonRetry(url, attemptsLeft - 1); });
+      });
+  }
+
   var customersFull = [];       // sellable customers as returned by the server - {name, channel, city}
   var customerNames = [];       // sellable names only, filtered to the selected salesperson's city
   var customerItems = [];       // {label, value, sub} for the delivery-entry autocomplete, same filter
@@ -940,8 +961,7 @@
   }
 
   document.getElementById('refreshRecent').addEventListener('click', function() {
-    fetch(API_URL + '?api=recentActivity&key=' + encodeURIComponent(API_KEY))
-      .then(function(r) { return r.json(); })
+    fetchJsonRetry(API_URL + '?api=recentActivity&key=' + encodeURIComponent(API_KEY))
       .then(function(data) {
         if (data && data.error) { showMessage(data.error, 'error'); return; }
         renderRecent(data);
@@ -950,28 +970,42 @@
   });
 
   // ---------- initial load ----------
-  fetch(API_URL + '?api=formData&key=' + encodeURIComponent(API_KEY))
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data && data.error) throw new Error(data.error);
-      customersFull = data.customers;
-      allCustomerItems = (data.allCustomerNames || []).map(function(c) { return { label: c.name, value: c.name, sub: c.status }; });
-      customerStats = data.customerStats || {};
-      locationItems = (data.locationSuggestions || []).map(function(l) { return { label: l, value: l }; });
-      (data.salespeople || []).forEach(function(sp) { salespersonCity[sp.name] = sp.city; });
-      populateSelect(document.getElementById('salesperson'), data.salespeople.map(function(sp) { return sp.name; }), 'Select a salesperson...');
-      populateSelect(document.getElementById('newCustCity'), data.cityOptions || [], 'Select...');
-      populateSelect(document.getElementById('newCustBusinessType'), data.businessTypeOptions || [], 'Select...');
-      refilterCustomersForSalesperson();
-      renderSummary();
-      updateRecentHeading();
-      renderRecent(data.recent);
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-    })
-    .catch(function(err) {
-      document.getElementById('loading').textContent = 'Failed to load: ' + err.message;
-    });
+  function loadInitialData() {
+    document.getElementById('loading').textContent = 'Loading...';
+    fetchJsonRetry(API_URL + '?api=formData&key=' + encodeURIComponent(API_KEY))
+      .then(function(data) {
+        if (data && data.error) throw new Error(data.error);
+        customersFull = data.customers;
+        allCustomerItems = (data.allCustomerNames || []).map(function(c) { return { label: c.name, value: c.name, sub: c.status }; });
+        customerStats = data.customerStats || {};
+        locationItems = (data.locationSuggestions || []).map(function(l) { return { label: l, value: l }; });
+        (data.salespeople || []).forEach(function(sp) { salespersonCity[sp.name] = sp.city; });
+        populateSelect(document.getElementById('salesperson'), data.salespeople.map(function(sp) { return sp.name; }), 'Select a salesperson...');
+        populateSelect(document.getElementById('newCustCity'), data.cityOptions || [], 'Select...');
+        populateSelect(document.getElementById('newCustBusinessType'), data.businessTypeOptions || [], 'Select...');
+        refilterCustomersForSalesperson();
+        renderSummary();
+        updateRecentHeading();
+        renderRecent(data.recent);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+      })
+      .catch(function(err) {
+        var loading = document.getElementById('loading');
+        loading.innerHTML = '';
+        var msg = document.createElement('p');
+        msg.className = 'text-red-600 mb-3';
+        msg.textContent = 'Failed to load: ' + err.message;
+        var retryBtn = document.createElement('button');
+        retryBtn.type = 'button';
+        retryBtn.className = 'text-sm font-semibold text-primary-600 hover:text-primary-700';
+        retryBtn.textContent = 'Try again';
+        retryBtn.addEventListener('click', loadInitialData);
+        loading.appendChild(msg);
+        loading.appendChild(retryBtn);
+      });
+  }
+  loadInitialData();
 
   document.getElementById('saleForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -1020,8 +1054,7 @@
       return;
     }
     list.innerHTML = '<div class="p-6 text-sm text-slate-500 text-center">Loading...</div>';
-    fetch(API_URL + '?api=myLeads&salesperson=' + encodeURIComponent(salesperson) + '&key=' + encodeURIComponent(API_KEY))
-      .then(function(r) { return r.json(); })
+    fetchJsonRetry(API_URL + '?api=myLeads&salesperson=' + encodeURIComponent(salesperson) + '&key=' + encodeURIComponent(API_KEY))
       .then(function(leads) {
         if (leads && leads.error) { list.innerHTML = '<div class="p-6 text-sm text-red-600">' + leads.error + '</div>'; return; }
         renderLeadsList(leads);
@@ -1089,11 +1122,12 @@
       var willShow = historyPanel.classList.contains('hidden');
       historyPanel.classList.toggle('hidden');
       if (willShow && !historyPanel.dataset.loaded) {
-        historyPanel.dataset.loaded = '1';
         historyPanel.innerHTML = '<div class="text-xs text-slate-500">Loading...</div>';
-        fetch(API_URL + '?api=leadHistory&customer=' + encodeURIComponent(lead.name) + '&key=' + encodeURIComponent(API_KEY))
-          .then(function(r) { return r.json(); })
-          .then(function(history) { renderHistory(historyPanel, history); })
+        fetchJsonRetry(API_URL + '?api=leadHistory&customer=' + encodeURIComponent(lead.name) + '&key=' + encodeURIComponent(API_KEY))
+          .then(function(history) {
+            historyPanel.dataset.loaded = '1'; // only mark loaded once it actually succeeded - a failed load can retry on the next click
+            renderHistory(historyPanel, history);
+          })
           .catch(function(err) { historyPanel.innerHTML = '<div class="text-xs text-red-600">' + err.message + '</div>'; });
       }
     });
@@ -1409,8 +1443,7 @@
     ['reportBySalesperson', 'reportByCity', 'reportByMonth'].forEach(function(id) {
       document.getElementById(id).innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-sm text-slate-500 text-center">Loading...</td></tr>';
     });
-    fetch(API_URL + '?api=simpleReports&month=' + encodeURIComponent(month) + '&key=' + encodeURIComponent(API_KEY))
-      .then(function(r) { return r.json(); })
+    fetchJsonRetry(API_URL + '?api=simpleReports&month=' + encodeURIComponent(month) + '&key=' + encodeURIComponent(API_KEY))
       .then(function(data) {
         if (data && data.error) throw new Error(data.error);
         reportsLoadedForMonth = month;
