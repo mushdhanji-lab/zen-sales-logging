@@ -416,20 +416,21 @@
   <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
     <form id="addLeadForm">
       <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-slate-800">Add as a target</h2>
+        <h2 class="text-lg font-semibold text-slate-800" id="addLeadTitle">Add as a target</h2>
         <button type="button" id="addLeadCancel" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
       </div>
       <div class="p-6 space-y-4">
+        <p id="claimHint" class="hidden text-xs text-slate-500">Already in Customers - this makes it your target instead of creating a new one.</p>
         <div class="relative">
           <label class="block text-sm font-medium text-slate-700 mb-1" for="leadName">Company name</label>
           <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="leadName" type="text" autocomplete="off" required>
           <div id="leadNamePanel" class="autocomplete-panel hidden absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg"></div>
         </div>
-        <div>
+        <div id="leadBusinessTypeGroup">
           <label class="block text-sm font-medium text-slate-700 mb-1" for="leadBusinessType">Industry / business type</label>
           <input class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-slate-300 rounded-md" id="leadBusinessType" type="text">
         </div>
-        <div>
+        <div id="leadChannelGroup">
           <label class="block text-sm font-medium text-slate-700 mb-1" for="leadChannel">Channel (if known)</label>
           <select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg shadow-sm" id="leadChannel">
             <option value="">Not sure yet</option>
@@ -472,7 +473,7 @@
   var salespersonCity = {};     // {name: city} - drives the customer-list filter
   var customerStats = {};       // {salesperson: {customerName: {count, lastDate}}} - ranks autocomplete on focus
   var locationItems = [];       // {label, value} - suggestions for the New Customer Location field
-  var karibuCompanies = null;   // loaded lazily when Browse is first opened
+  var browseTargets = null;     // Customers-tab rows for "Find new target" - refetched every time the modal opens
   var recentRaw = [];           // last fetched "recent activity" rows, before the All/Mine filter
   var recentShowMineOnly = false;
   var lines = [];
@@ -1193,11 +1194,10 @@
     document.getElementById('browseModal').classList.remove('hidden');
     document.getElementById('browseSearch').value = '';
     document.getElementById('browseSearch').focus();
-    if (karibuCompanies === null) {
-      loadKaribuCompanies(true);
-    } else {
-      renderBrowseResults('');
-    }
+    // Refetched every open, not cached - the exclusion of "already my open
+    // lead" depends on which salesperson is currently selected, and this
+    // also picks up anything a teammate just claimed.
+    loadBrowseTargets(true);
   }
 
   /**
@@ -1205,26 +1205,28 @@
    * interstitial instead of the real response (seen intermittently across
    * several endpoints, not specific to this one) - r.json() then throws.
    * Retrying once almost always succeeds, so a single blip shouldn't
-   * permanently blank the list for the rest of the session. Only a second
-   * failure in a row is shown to the user, with a manual retry.
+   * permanently blank the list. Only a second failure in a row is shown
+   * to the user, with a manual retry.
    */
-  function loadKaribuCompanies(allowRetry) {
+  function loadBrowseTargets(allowRetry) {
+    browseTargets = null;
     document.getElementById('browseResults').innerHTML = '<div class="p-6 text-sm text-slate-500 text-center">Loading companies...</div>';
-    fetch(API_URL + '?api=karibuCompanies&key=' + encodeURIComponent(API_KEY))
+    var salesperson = document.getElementById('salesperson').value;
+    fetch(API_URL + '?api=browseTargets&salesperson=' + encodeURIComponent(salesperson) + '&key=' + encodeURIComponent(API_KEY))
       .then(function(r) { return r.json(); })
       .then(function(list) {
         if (list && list.error) throw new Error(list.error);
-        karibuCompanies = list;
+        browseTargets = list;
         renderBrowseResults(document.getElementById('browseSearch').value);
       })
       .catch(function() {
-        if (allowRetry) { loadKaribuCompanies(false); return; }
+        if (allowRetry) { loadBrowseTargets(false); return; }
         document.getElementById('browseResults').innerHTML =
           '<div class="p-6 text-sm text-center">' +
           '<p class="text-red-600 mb-2">Couldn\'t load the company list - the connection hiccuped.</p>' +
           '<button type="button" id="browseRetryBtn" class="text-sm font-semibold text-primary-600 hover:text-primary-700">Try again</button>' +
           '</div>';
-        document.getElementById('browseRetryBtn').addEventListener('click', function() { loadKaribuCompanies(true); });
+        document.getElementById('browseRetryBtn').addEventListener('click', function() { loadBrowseTargets(true); });
       });
   }
 
@@ -1233,18 +1235,18 @@
   }
 
   document.getElementById('browseSearch').addEventListener('input', function() {
-    if (karibuCompanies === null) return; // still loading (or showing a retry) - nothing to filter yet
+    if (browseTargets === null) return; // still loading (or showing a retry) - nothing to filter yet
     renderBrowseResults(this.value);
   });
 
   function renderBrowseResults(query) {
     var results = document.getElementById('browseResults');
     results.innerHTML = '';
-    if (!karibuCompanies) return;
+    if (!browseTargets) return;
     query = query.trim().toLowerCase();
     var matches = query
-      ? karibuCompanies.filter(function(c) { return c.name.toLowerCase().indexOf(query) !== -1; }).slice(0, 40)
-      : karibuCompanies.slice(0, 40);
+      ? browseTargets.filter(function(c) { return c.name.toLowerCase().indexOf(query) !== -1; }).slice(0, 40)
+      : browseTargets.slice(0, 40);
     if (!matches.length) {
       results.innerHTML = '<div class="p-6 text-sm text-slate-500 text-center italic">No matches - try "Add a new company" below.</div>';
       return;
@@ -1257,12 +1259,13 @@
       nameEl.className = 'text-sm font-medium text-slate-800';
       nameEl.textContent = c.name;
       left.appendChild(nameEl);
-      if (c.industry) {
-        var indEl = document.createElement('div');
-        indEl.className = 'text-xs text-slate-500';
-        indEl.textContent = c.industry;
-        left.appendChild(indEl);
-      }
+      var subBits = [c.status];
+      subBits.push(c.assignedSalesperson ? ('assigned to ' + c.assignedSalesperson) : 'unassigned');
+      if (c.businessType) subBits.push(c.businessType);
+      var subEl = document.createElement('div');
+      subEl.className = 'text-xs text-slate-500';
+      subEl.textContent = subBits.join(' · ');
+      left.appendChild(subEl);
       row.appendChild(left);
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -1270,7 +1273,7 @@
       btn.textContent = '+ Target';
       btn.addEventListener('click', function() {
         closeBrowseModal();
-        openAddLeadModal(c.name, c.industry);
+        openClaimLeadModal(c.name, c.businessType);
       });
       row.appendChild(btn);
       results.appendChild(row);
@@ -1301,13 +1304,39 @@
        kind === 'error' ? 'bg-red-50 text-red-700' : 'hidden');
   }
 
+  var addLeadMode = 'create'; // 'create' (brand-new company) or 'claim' (existing Customers row, from Find new target)
+
   function openAddLeadModal(name, businessType) {
+    addLeadMode = 'create';
     document.getElementById('addLeadForm').reset();
     document.getElementById('leadName').value = name || '';
+    document.getElementById('leadName').readOnly = false;
     document.getElementById('leadBusinessType').value = businessType || '';
+    document.getElementById('leadBusinessTypeGroup').hidden = false;
+    document.getElementById('leadChannelGroup').hidden = false;
+    document.getElementById('claimHint').hidden = true;
+    document.getElementById('addLeadTitle').textContent = 'Add as a target';
+    document.getElementById('addLeadSubmit').textContent = 'Add as target';
     showAddLeadMessage('', '');
     document.getElementById('addLeadModal').classList.remove('hidden');
     (name ? document.getElementById('leadNote') : document.getElementById('leadName')).focus();
+  }
+
+  /** Existing Customers row picked from "Find new target" - claims it instead of creating a duplicate. */
+  function openClaimLeadModal(name, businessType) {
+    addLeadMode = 'claim';
+    document.getElementById('addLeadForm').reset();
+    document.getElementById('leadName').value = name || '';
+    document.getElementById('leadName').readOnly = true;
+    document.getElementById('leadBusinessType').value = businessType || '';
+    document.getElementById('leadBusinessTypeGroup').hidden = true;
+    document.getElementById('leadChannelGroup').hidden = true;
+    document.getElementById('claimHint').hidden = false;
+    document.getElementById('addLeadTitle').textContent = 'Make this my target';
+    document.getElementById('addLeadSubmit').textContent = 'Make this my target';
+    showAddLeadMessage('', '');
+    document.getElementById('addLeadModal').classList.remove('hidden');
+    document.getElementById('leadNote').focus();
   }
 
   function closeAddLeadModal() {
@@ -1328,20 +1357,21 @@
     submitBtn.disabled = true;
     showAddLeadMessage('', '');
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'addLead',
-        key: API_KEY,
-        payload: {
+    var isClaim = addLeadMode === 'claim';
+    var payload = isClaim
+      ? { name: name, salesperson: salesperson, note: document.getElementById('leadNote').value.trim() }
+      : {
           name: name,
           businessType: document.getElementById('leadBusinessType').value.trim(),
           channel: document.getElementById('leadChannel').value,
           salesperson: salesperson,
           note: document.getElementById('leadNote').value.trim()
-        }
-      })
+        };
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: isClaim ? 'claimLead' : 'addLead', key: API_KEY, payload: payload })
     })
       .then(function(r) { return r.json(); })
       .then(function(result) {
@@ -1351,7 +1381,7 @@
           showAddLeadMessage('Already on the list as "' + result.existingName + '" (status: ' + result.existingStatus + ').', 'error');
           return;
         }
-        allCustomerItems.push({ label: result.name, value: result.name, sub: 'Prospect' });
+        if (!isClaim) allCustomerItems.push({ label: result.name, value: result.name, sub: 'Prospect' });
         closeAddLeadModal();
         loadMyLeads();
       })
