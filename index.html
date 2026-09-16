@@ -469,12 +469,18 @@
   /**
    * This deployment's /exec endpoint intermittently serves a non-JSON
    * interstitial instead of the real response - r.json() then throws
-   * "Unexpected token '<'". It almost always succeeds on the very next
-   * attempt, so a couple of quick retries avoid surfacing a transient blip
-   * as a hard failure. GET (read) calls only - never wrap a submit/create/
-   * update POST in this, since a request that looks like it failed on the
-   * client may have already gone through on the server, and retrying it
-   * could double up a submission.
+   * "Unexpected token '<'" (GET) or the fetch itself rejects as "Failed to
+   * fetch" (POST). Either way the request may have already gone through on
+   * the server even though the client sees a failure - confirmed directly:
+   * a customer showed up in Customers despite the app reporting an error.
+   * It almost always succeeds on the very next attempt, so a couple of
+   * quick retries avoid surfacing a transient blip as a hard failure.
+   *
+   * GET (read) calls are always safe to retry. POST actions are only safe
+   * when the backend itself is idempotent for a repeat call - do not use
+   * postJsonRetry for submitBatch (appends Sales Log rows unconditionally,
+   * every call - a retry after a false-negative failure would double-log a
+   * real delivery).
    */
   function fetchJsonRetry(url, attemptsLeft) {
     if (attemptsLeft === undefined) attemptsLeft = 3;
@@ -484,6 +490,22 @@
         if (attemptsLeft <= 1) throw err;
         return new Promise(function(resolve) { setTimeout(resolve, 700); })
           .then(function() { return fetchJsonRetry(url, attemptsLeft - 1); });
+      });
+  }
+
+  /** POST counterpart of fetchJsonRetry - only for backend actions with a server-side dedupe check (createCustomer, addLead). */
+  function postJsonRetry(url, bodyObj, attemptsLeft) {
+    if (attemptsLeft === undefined) attemptsLeft = 3;
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(bodyObj)
+    })
+      .then(function(r) { return r.json(); })
+      .catch(function(err) {
+        if (attemptsLeft <= 1) throw err;
+        return new Promise(function(resolve) { setTimeout(resolve, 700); })
+          .then(function() { return postJsonRetry(url, bodyObj, attemptsLeft - 1); });
       });
   }
 
@@ -850,12 +872,7 @@
     submitBtn.disabled = true;
     showNewCustMessage('', '');
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'createCustomer', key: API_KEY, payload: payload })
-    })
-      .then(function(r) { return r.json(); })
+    postJsonRetry(API_URL, { action: 'createCustomer', key: API_KEY, payload: payload })
       .then(function(result) {
         submitBtn.disabled = false;
         if (result && result.error) { showNewCustMessage(result.error, 'error'); return; }
@@ -1407,12 +1424,7 @@
           note: document.getElementById('leadNote').value.trim()
         };
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: isClaim ? 'claimLead' : 'addLead', key: API_KEY, payload: payload })
-    })
-      .then(function(r) { return r.json(); })
+    postJsonRetry(API_URL, { action: isClaim ? 'claimLead' : 'addLead', key: API_KEY, payload: payload })
       .then(function(result) {
         submitBtn.disabled = false;
         if (result && result.error) { showAddLeadMessage(result.error, 'error'); return; }
