@@ -306,7 +306,13 @@
 </main>
 
 <div id="newCustomerModal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col" style="max-height:90vh">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col relative" style="max-height:90vh">
+    <div id="newCustSubmitting" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center rounded-xl z-10">
+      <div class="flex items-center gap-2 text-sm font-medium text-slate-600">
+        <svg class="animate-spin h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+        Creating customer...
+      </div>
+    </div>
     <form id="newCustomerForm" class="flex flex-col overflow-hidden">
       <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-800">New customer</h2>
@@ -413,7 +419,13 @@
 </div>
 
 <div id="addLeadModal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md relative">
+    <div id="addLeadSubmitting" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center rounded-xl z-10">
+      <div class="flex items-center gap-2 text-sm font-medium text-slate-600">
+        <svg class="animate-spin h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+        <span id="addLeadSubmittingText">Saving...</span>
+      </div>
+    </div>
     <form id="addLeadForm">
       <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-800" id="addLeadTitle">Add as a target</h2>
@@ -871,10 +883,14 @@
     }
     submitBtn.disabled = true;
     showNewCustMessage('', '');
+    // Retries on a transient failure can take a few seconds - show a
+    // greyed-out overlay so it's clear the form is working, not stuck.
+    document.getElementById('newCustSubmitting').classList.remove('hidden');
 
     postJsonRetry(API_URL, { action: 'createCustomer', key: API_KEY, payload: payload })
       .then(function(result) {
         submitBtn.disabled = false;
+        document.getElementById('newCustSubmitting').classList.add('hidden');
         if (result && result.error) { showNewCustMessage(result.error, 'error'); return; }
         if (result && result.duplicate) {
           showNewCustMessage('Already on the list as "' + result.existingName + '" - select them from the Customer field instead.', 'error');
@@ -891,6 +907,7 @@
         document.getElementById('message').scrollIntoView({ behavior: 'smooth', block: 'center' });
       })
       .catch(function(err) {
+        document.getElementById('newCustSubmitting').classList.add('hidden');
         submitBtn.disabled = false;
         showNewCustMessage(err.message, 'error');
       });
@@ -1424,9 +1441,13 @@
           note: document.getElementById('leadNote').value.trim()
         };
 
+    document.getElementById('addLeadSubmittingText').textContent = isClaim ? 'Saving...' : 'Adding target...';
+    document.getElementById('addLeadSubmitting').classList.remove('hidden');
+
     postJsonRetry(API_URL, { action: isClaim ? 'claimLead' : 'addLead', key: API_KEY, payload: payload })
       .then(function(result) {
         submitBtn.disabled = false;
+        document.getElementById('addLeadSubmitting').classList.add('hidden');
         if (result && result.error) { showAddLeadMessage(result.error, 'error'); return; }
         if (result && result.duplicate) {
           showAddLeadMessage('Already on the list as "' + result.existingName + '" (status: ' + result.existingStatus + ').', 'error');
@@ -1437,6 +1458,7 @@
         loadMyLeads();
       })
       .catch(function(err) {
+        document.getElementById('addLeadSubmitting').classList.add('hidden');
         submitBtn.disabled = false;
         showAddLeadMessage(err.message, 'error');
       });
