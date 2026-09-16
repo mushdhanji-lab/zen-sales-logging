@@ -638,6 +638,7 @@
   }
 
   document.getElementById('salesperson').addEventListener('change', function() {
+    try { localStorage.setItem('zenSalesperson', this.value); } catch (e) {} // private/incognito browsing can throw - fine to just skip remembering
     refilterCustomersForSalesperson();
     updateRecentHeading();
     renderRecent(recentRaw);
@@ -1044,6 +1045,14 @@
         locationItems = (data.locationSuggestions || []).map(function(l) { return { label: l, value: l }; });
         (data.salespeople || []).forEach(function(sp) { salespersonCity[sp.name] = sp.city; });
         populateSelect(document.getElementById('salesperson'), data.salespeople.map(function(sp) { return sp.name; }), 'Select a salesperson...');
+        try {
+          var rememberedSalesperson = localStorage.getItem('zenSalesperson');
+          // Only restore it if that name is still a real option - a select
+          // silently ignores a .value that has no matching <option>.
+          if (rememberedSalesperson && data.salespeople.some(function(sp) { return sp.name === rememberedSalesperson; })) {
+            document.getElementById('salesperson').value = rememberedSalesperson;
+          }
+        } catch (e) {} // private/incognito browsing can throw - fine to just skip remembering
         populateSelect(document.getElementById('newCustCity'), data.cityOptions || [], 'Select...');
         populateSelect(document.getElementById('newCustBusinessType'), data.businessTypeOptions || [], 'Select...');
         refilterCustomersForSalesperson();
