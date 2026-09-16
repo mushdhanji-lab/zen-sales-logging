@@ -521,6 +521,24 @@
       });
   }
 
+  /**
+   * Deterministic short hash of a payload's meaningful content, used as an
+   * idempotency key so the server can recognize "this exact submission
+   * again" (a re-click after a false-failure error, or an impatient double
+   * click) and skip re-appending it - see isDuplicateSubmission_ in
+   * Code.js/Leads.js. Same content -> same key, so a plain re-click
+   * naturally reuses it with no extra state to track; different content ->
+   * a different key, so it never blocks a genuinely new submission.
+   */
+  function idempotencyKeyFor(obj) {
+    var str = JSON.stringify(obj);
+    var hash = 5381;
+    for (var i = 0; i < str.length; i++) {
+      hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
+    }
+    return 'h' + (hash >>> 0).toString(36) + str.length.toString(36);
+  }
+
   var customersFull = [];       // sellable customers as returned by the server - {name, channel, city}
   var customerNames = [];       // sellable names only, filtered to the selected salesperson's city
   var customerItems = [];       // {label, value, sub} for the delivery-entry autocomplete, same filter
@@ -864,6 +882,7 @@
   document.getElementById('newCustomerForm').addEventListener('submit', function(e) {
     e.preventDefault();
     var submitBtn = document.getElementById('newCustSubmit');
+    if (submitBtn.disabled) return; // already submitting - ignore a re-entrant submit
     var payload = {
       name: document.getElementById('newCustName').value.trim(),
       city: document.getElementById('newCustCity').value,
@@ -1049,6 +1068,7 @@
   document.getElementById('saleForm').addEventListener('submit', function(e) {
     e.preventDefault();
     var btn = document.getElementById('submitBtn');
+    if (btn.disabled) return; // already submitting - ignore a re-entrant submit (e.g. Enter spammed while in flight)
     var salesperson = document.getElementById('salesperson').value;
     if (!salesperson) { showMessage('Select a salesperson.', 'error'); return; }
     if (!cardIsBlank()) {
@@ -1057,25 +1077,33 @@
     }
     if (!lines.length) { showMessage('Add at least one customer to the list before submitting.', 'error'); return; }
     btn.disabled = true;
+    btn.textContent = 'Submitting...';
     showMessage('', '');
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'submitBatch', key: API_KEY, payload: { salesperson: salesperson, lines: lines } })
-    })
-      .then(function(r) { return r.json(); })
+    var payload = { salesperson: salesperson, lines: lines };
+    payload.idempotencyKey = idempotencyKeyFor(payload);
+
+    // Safe to retry a false-negative failure here (unlike a blind retry):
+    // the server recognizes the same idempotencyKey and reports success
+    // without appending the delivery a second time - see isDuplicateSubmission_.
+    postJsonRetry(API_URL, { action: 'submitBatch', key: API_KEY, payload: payload })
       .then(function(result) {
         btn.disabled = false;
+        btn.textContent = 'Submit All';
         if (result && result.error) { showMessage(result.error, 'error'); return; }
-        showMessage('Saved ' + result.count + ' customer(s), ' + result.grandTotal + ' units total.', 'success');
         lines = [];
         setEditing(null);
         renderRecent(result.recent);
         reportsLoadedForMonth = null;
+        if (result && result.duplicate) {
+          showMessage('Already submitted a moment ago - no changes made.', 'success');
+          return;
+        }
+        showMessage('Saved ' + result.count + ' customer(s), ' + result.grandTotal + ' units total.', 'success');
       })
       .catch(function(err) {
         btn.disabled = false;
+        btn.textContent = 'Submit All';
         showMessage(err.message, 'error');
       });
   });
@@ -1221,7 +1249,7 @@
     var saveBtn = document.createElement('button');
     saveBtn.type = 'submit';
     saveBtn.textContent = 'Save update';
-    saveBtn.className = 'py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg';
+    saveBtn.className = 'py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60 disabled:cursor-not-allowed';
     statusRow.appendChild(saveBtn);
     form.appendChild(statusRow);
 
@@ -1231,26 +1259,28 @@
 
     form.addEventListener('submit', function(e) {
       e.preventDefault();
+      if (saveBtn.disabled) return; // already submitting - ignore a re-entrant submit
       var salesperson = document.getElementById('salesperson').value;
       if (!salesperson) { msg.className = 'text-sm rounded-lg px-3 py-2 bg-red-50 text-red-700'; msg.textContent = 'Select a salesperson above first.'; return; }
       saveBtn.disabled = true;
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'addLeadUpdate',
-          key: API_KEY,
-          payload: { customerName: lead.name, salesperson: salesperson, note: textarea.value.trim(), newStatus: statusSelect.value }
-        })
-      })
-        .then(function(r) { return r.json(); })
+      saveBtn.textContent = 'Saving...';
+
+      var payload = { customerName: lead.name, salesperson: salesperson, note: textarea.value.trim(), newStatus: statusSelect.value };
+      payload.idempotencyKey = idempotencyKeyFor(payload);
+
+      // Safe to retry a false-negative failure: the server recognizes the
+      // same idempotencyKey and skips re-applying the update - see
+      // isDuplicateSubmission_.
+      postJsonRetry(API_URL, { action: 'addLeadUpdate', key: API_KEY, payload: payload })
         .then(function(result) {
           saveBtn.disabled = false;
+          saveBtn.textContent = 'Save update';
           if (result && result.error) { msg.className = 'text-sm rounded-lg px-3 py-2 bg-red-50 text-red-700'; msg.textContent = result.error; return; }
           loadMyLeads();
         })
         .catch(function(err) {
           saveBtn.disabled = false;
+          saveBtn.textContent = 'Save update';
           msg.className = 'text-sm rounded-lg px-3 py-2 bg-red-50 text-red-700';
           msg.textContent = err.message;
         });
@@ -1421,12 +1451,13 @@
 
   document.getElementById('addLeadForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    var submitBtn = document.getElementById('addLeadSubmit');
+    if (submitBtn.disabled) return; // already submitting - ignore a re-entrant submit
     var salesperson = document.getElementById('salesperson').value;
     if (!salesperson) { showAddLeadMessage('Select a salesperson above first.', 'error'); return; }
     var name = document.getElementById('leadName').value.trim();
     if (!name) { showAddLeadMessage('Company name is required.', 'error'); return; }
 
-    var submitBtn = document.getElementById('addLeadSubmit');
     submitBtn.disabled = true;
     showAddLeadMessage('', '');
 
@@ -1440,6 +1471,9 @@
           salesperson: salesperson,
           note: document.getElementById('leadNote').value.trim()
         };
+    // claimLead has a server-side idempotency check (see isDuplicateSubmission_);
+    // addLead already dedupes naturally by exact company name, so it doesn't need one.
+    if (isClaim) payload.idempotencyKey = idempotencyKeyFor(payload);
 
     document.getElementById('addLeadSubmittingText').textContent = isClaim ? 'Saving...' : 'Adding target...';
     document.getElementById('addLeadSubmitting').classList.remove('hidden');
