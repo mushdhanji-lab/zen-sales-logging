@@ -867,6 +867,11 @@
         document.getElementById('entryCustomer').value = result.name;
         closeNewCustomerModal();
         showMessage('Added "' + result.name + '" as Active - Pending. Select their quantities and tap "Add to list".', 'success');
+        // The confirmation lives in the delivery card's message banner, which
+        // can be well below the fold relative to where "New customer" was
+        // opened from - without this, the modal just vanishes with no
+        // visible feedback, so it looks like nothing happened.
+        document.getElementById('message').scrollIntoView({ behavior: 'smooth', block: 'center' });
       })
       .catch(function(err) {
         submitBtn.disabled = false;
